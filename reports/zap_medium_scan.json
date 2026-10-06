@@ -3,7 +3,7 @@
   "@generated": "2024-10-06T12:00:00Z",
   "site": [
     {
-      "@name": "https://demo.owasp-juice.shop",
+      "@name": "https://jewellery-events-div-classification.trycloudflare.com",
       "alerts": [
         {
           "pluginId": "10020",
@@ -16,7 +16,7 @@
           "desc": "X-Frame-Options or Content-Security-Policy frame-ancestors missing.",
           "instances": [
             {
-              "uri": "https://demo.owasp-juice.shop/#/search",
+              "uri": "https://jewellery-events-div-classification.trycloudflare.com/#/search",
               "method": "GET"
             }
           ],
@@ -34,7 +34,7 @@
           "desc": "No anti-CSRF token on form submission.",
           "instances": [
             {
-              "uri": "https://demo.owasp-juice.shop/contact",
+              "uri": "https://jewellery-events-div-classification.trycloudflare.com/contact",
               "method": "POST"
             }
           ],

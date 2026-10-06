@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Quiet Project Indicator */}
         <div className="px-4 pb-2">
           <a
-            href="https://demo.owasp-juice.shop"
+            href="https://jewellery-events-div-classification.trycloudflare.com"
             target="_blank"
             rel="noopener noreferrer"
             className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100/90 border border-slate-200/80 flex items-center justify-between transition-colors group cursor-pointer block"
@@ -69,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   OWASP Juice Shop
                 </div>
                 <div className="text-[11px] text-slate-500 truncate font-mono">
-                  demo.owasp-juice.shop
+                  jewellery-events-div-classification.trycloudflare.com
                 </div>
               </div>
               <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active Cloud Target" />

@@ -42,3 +42,4 @@ edgetemp*
 
 .vercel
 .env*
+cloudflared.exe

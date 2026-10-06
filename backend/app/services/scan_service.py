@@ -47,7 +47,7 @@ class ScanService:
         }
 
         # Determine effective target URL
-        resolved_url = target_url or project.target_url or "https://demo.owasp-juice.shop"
+        resolved_url = target_url or project.target_url or "https://jewellery-events-div-classification.trycloudflare.com"
         if not scan_identifier:
             scan_identifier = f"ZAP-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
 
