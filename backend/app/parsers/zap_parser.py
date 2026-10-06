@@ -130,20 +130,31 @@ class ZAPParser:
             name = 'Unknown Finding'
 
         # Severity
-        risk_raw = str(alert.get('riskcode', alert.get('risk', alert.get('riskDesc', '1')))).lower()
-        severity = RISK_MAP.get(risk_raw, 'Low')
-        # Also check riskdesc string
-        risk_desc = str(alert.get('riskdesc', alert.get('riskDesc', ''))).lower()
-        if severity == 'Low' and risk_desc:
-            for k, v in RISK_MAP.items():
-                if k in risk_desc:
-                    severity = v
-                    break
-
-        # ZAP uses riskcode 3 = High, but some versions have "Critical" as 4
         riskcode = str(alert.get('riskcode', '')).strip()
+        risk_raw = str(alert.get('risk', alert.get('riskdesc', alert.get('riskDesc', '')))).lower()
+
         if riskcode == '4':
             severity = 'Critical'
+        elif riskcode == '3':
+            severity = 'High'
+        elif riskcode == '2':
+            severity = 'Medium'
+        elif riskcode == '1':
+            severity = 'Low'
+        elif riskcode == '0':
+            severity = 'Informational'
+        elif 'critical' in risk_raw:
+            severity = 'Critical'
+        elif 'high' in risk_raw:
+            severity = 'High'
+        elif 'medium' in risk_raw or 'moderate' in risk_raw:
+            severity = 'Medium'
+        elif 'informational' in risk_raw or 'info' in risk_raw or 'false positive' in risk_raw:
+            severity = 'Informational'
+        elif 'low' in risk_raw:
+            severity = 'Low'
+        else:
+            severity = 'Low'
 
         # Confidence
         conf_raw = str(alert.get('confidence', alert.get('confidenceDesc', '2'))).lower()

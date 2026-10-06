@@ -131,16 +131,11 @@ export const FindingsPage: React.FC<FindingsPageProps> = ({
                 setSelectedScanContext(e.target.value);
                 setPage(1);
               }}
-              className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-300 cursor-pointer shadow-xs max-w-[260px] truncate"
+              className="px-2.5 py-1.5 rounded-lg bg-white border border-slate-200 text-xs text-slate-800 font-medium focus:outline-none focus:border-slate-300 cursor-pointer shadow-xs max-w-[280px] truncate"
             >
-              {availableScans.length > 0 && (
-                <option value={availableScans[0].id.toString()}>
-                  Active scan: {availableScans[0].scan_identifier} ({availableScans[0].release_status})
-                </option>
-              )}
-              {availableScans.slice(1).map((s) => (
+              {availableScans.map((s) => (
                 <option key={s.id} value={s.id.toString()}>
-                  Scan #{s.id}: {s.scan_identifier} ({s.release_status})
+                  {s.id === initialScanId ? '★ Active: ' : ''}{s.scan_identifier} ({s.release_status})
                 </option>
               ))}
               <option value="all">All scans (Cumulative project view)</option>

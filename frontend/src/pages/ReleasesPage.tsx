@@ -7,6 +7,9 @@ import {
   FileText,
   Clock,
   ArrowRight,
+  ShieldAlert,
+  ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ReleasesPageProps {
@@ -37,15 +40,54 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({
     fetchReleases();
   }, [activeProjectId]);
 
+  const renderSeveritySummary = (rel: Release) => {
+    const sc = rel.severity_counts;
+    if (sc) {
+      const parts = [];
+      if (sc.critical > 0) parts.push(<span key="c" className="text-rose-700 font-bold">{sc.critical} Critical</span>);
+      if (sc.high > 0) parts.push(<span key="h" className="text-orange-700 font-bold">{sc.high} High</span>);
+      if (sc.medium > 0) parts.push(<span key="m" className="text-amber-800 font-medium">{sc.medium} Medium</span>);
+      if (sc.low > 0) parts.push(<span key="l" className="text-sky-700">{sc.low} Low</span>);
+      if (sc.informational > 0) parts.push(<span key="i" className="text-slate-500">{sc.informational} Informational</span>);
+
+      if (parts.length === 0) return <span className="text-emerald-700 font-medium">0 Vulnerabilities (Clean)</span>;
+
+      return (
+        <div className="flex items-center gap-1.5 flex-wrap text-xs">
+          {parts.map((p, idx) => (
+            <React.Fragment key={idx}>
+              {p}
+              {idx < parts.length - 1 && <span className="text-slate-300">&bull;</span>}
+            </React.Fragment>
+          ))}
+        </div>
+      );
+    }
+
+    if (rel.blocking_findings > 0) {
+      return (
+        <span className="text-rose-700 font-bold text-xs">
+          {rel.blocking_findings} Blocking findings
+        </span>
+      );
+    }
+
+    return (
+      <span className="text-emerald-700 font-medium text-xs">
+        All gating thresholds satisfied
+      </span>
+    );
+  };
+
   return (
-    <div className="space-y-6 select-none max-w-7xl">
+    <div className="space-y-6 select-none max-w-7xl font-sans">
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
           Releases
         </h1>
         <p className="text-xs text-slate-500 mt-0.5">
-          Gating decisions and promotion history for candidate builds.
+          Pre-release security gate decisions and historical gating rationales for candidate builds.
         </p>
       </div>
 
@@ -80,21 +122,25 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({
                   />
 
                   {/* Release Card */}
-                  <div className="p-5 rounded-xl bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:border-slate-300 transition-colors space-y-3">
+                  <div className="p-5 rounded-xl bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] hover:border-slate-300 transition-colors space-y-3.5">
                     <div className="flex items-start justify-between gap-4 flex-wrap">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-2.5 flex-wrap">
                           <span className="text-sm font-bold text-slate-900">
                             {rel.version}
                           </span>
                           <ReleaseGateBadge status={rel.status} size="sm" />
+                          <span className="text-xs text-slate-500 font-medium">
+                            Decision: <strong className={isBlock ? 'text-rose-700' : isReview ? 'text-amber-700' : 'text-emerald-700'}>{rel.status}</strong>
+                          </span>
                           {rel.security_score !== undefined && (
                             <span className="text-xs text-slate-600 bg-slate-50 px-2 py-0.5 rounded border border-slate-200 font-medium">
                               Score: {rel.security_score} / 100
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400">
+
+                        <div className="flex items-center gap-2 text-xs text-slate-400 pt-0.5">
                           <Clock className="w-3.5 h-3.5 text-slate-400" />
                           <span>
                             {rel.created_at ? new Date(rel.created_at).toLocaleString() : 'N/A'}
@@ -102,18 +148,23 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({
                           {rel.scan_identifier && (
                             <>
                               <span>&bull;</span>
-                              <span className="text-slate-600 font-medium">
-                                {rel.scan_identifier}
+                              <span className="text-slate-600 font-mono font-medium">
+                                Scan: {rel.scan_identifier}
                               </span>
                             </>
                           )}
+                        </div>
+
+                        {/* Severity Summary */}
+                        <div className="pt-1">
+                          {renderSeveritySummary(rel)}
                         </div>
                       </div>
 
                       {rel.scan_id && (
                         <button
-                          onClick={() => onNavigateToReport(rel.scan_id)}
-                          className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
+                          onClick={() => onNavigateToReport(rel.scan_id!)}
+                          className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                         >
                           <FileText className="w-3.5 h-3.5 text-slate-500" />
                           <span>View report</span>
@@ -122,9 +173,10 @@ export const ReleasesPage: React.FC<ReleasesPageProps> = ({
                       )}
                     </div>
 
-                    <div className="p-3 rounded-lg bg-slate-50 border border-slate-200/70 text-xs text-slate-700 leading-relaxed">
-                      <span className="font-medium text-slate-900 block mb-0.5">
-                        Gating rationale
+                    {/* Gating rationale */}
+                    <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 text-xs text-slate-700 leading-relaxed">
+                      <span className="font-semibold text-slate-900 block mb-1">
+                        Release gate decision rationale
                       </span>
                       {rel.reason}
                     </div>

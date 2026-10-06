@@ -23,6 +23,13 @@ def list_releases():
         data['scan_identifier'] = scan.scan_identifier if scan else 'N/A'
         data['security_score'] = scan.security_score if scan else None
         data['project_name'] = project.name if project else 'Unknown'
+        data['severity_counts'] = {
+            'critical': scan.critical_count,
+            'high': scan.high_count,
+            'medium': scan.medium_count,
+            'low': scan.low_count,
+            'informational': scan.informational_count,
+        } if scan else None
         result.append(data)
 
     return jsonify({

@@ -139,6 +139,50 @@
           "reference": "https://expressjs.com/en/advanced/best-practice-security.html",
           "cweid": "200",
           "wascid": "13"
+        },
+        {
+          "pluginId": "90019",
+          "alertRef": "90019-1",
+          "alert": "Remote Code Execution (Template Injection)",
+          "name": "Remote Code Execution (Template Injection)",
+          "riskcode": "4",
+          "confidence": "2",
+          "riskdesc": "Critical (Medium)",
+          "desc": "Server-Side Template Injection (SSTI) allows remote attackers to evaluate arbitrary template expressions within the server runtime, potentially leading to arbitrary system command execution.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/rest/basket/checkout",
+              "method": "POST",
+              "param": "coupon",
+              "attack": "#{7*7}",
+              "evidence": "#{7*7} => evaluated 49"
+            }
+          ],
+          "solution": "Do not pass untrusted user input directly into template engines. Use logic-less templates or execute templates within strict sandboxes.",
+          "reference": "https://cwe.mitre.org/data/definitions/94.html",
+          "cweid": "94",
+          "wascid": "20"
+        },
+        {
+          "pluginId": "10015",
+          "alertRef": "10015-1",
+          "alert": "Re-examine Cache-Control Directives",
+          "name": "Re-examine Cache-Control Directives",
+          "riskcode": "0",
+          "confidence": "2",
+          "riskdesc": "Informational (Medium)",
+          "desc": "The response contains sensitive customer data but specifies non-restrictive cache controls. Shared proxies or browser caches could store sensitive responses.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/rest/user/whoami",
+              "method": "GET",
+              "evidence": "Cache-Control: public, max-age=14400"
+            }
+          ],
+          "solution": "Verify cache control directives for sensitive authenticated endpoints (Cache-Control: no-store).",
+          "reference": "https://owasp.org/www-community/attacks/Session_Exposure",
+          "cweid": "525",
+          "wascid": "13"
         }
       ]
     }

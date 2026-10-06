@@ -13,6 +13,7 @@ dashboard_bp = Blueprint('dashboard', __name__)
 @dashboard_bp.route('/dashboard', methods=['GET'])
 def get_dashboard_data():
     project_id = request.args.get('project_id', type=int)
+    scan_id = request.args.get('scan_id', type=int)
 
     # If no projects exist, seed demo data automatically
     all_projects = Project.query.all()
@@ -35,14 +36,27 @@ def get_dashboard_data():
 
     # Scans for this project
     scans = Scan.query.filter_by(project_id=project.id).order_by(Scan.created_at.desc()).all()
-    latest_scan = scans[0] if scans else None
 
-    # Latest findings
+    # Active scan selection (specific scan_id or latest)
+    active_scan = None
+    if scan_id:
+        active_scan = db.session.get(Scan, scan_id)
+        if active_scan and active_scan.project_id != project.id:
+            active_scan = None
+
+    if not active_scan:
+        active_scan = scans[0] if scans else None
+
+    # Current release policy
+    settings = AppSettings.query.first()
+    policy = settings.to_dict()['release_policy'] if settings else {}
+
+    # Active scan findings
     findings = []
-    if latest_scan:
-        findings = Finding.query.filter_by(scan_id=latest_scan.id).all()
+    if active_scan:
+        findings = Finding.query.filter_by(scan_id=active_scan.id).all()
 
-    # Severity distribution for latest scan
+    # Severity distribution for active scan
     sev_distribution = {s: 0 for s in SEVERITY_ORDER}
     owasp_distribution = {}
     cwe_distribution = {}
@@ -68,13 +82,34 @@ def get_dashboard_data():
             "high": s.high_count,
             "medium": s.medium_count,
             "low": s.low_count,
+            "informational": s.informational_count,
         })
 
     # Recent releases
     recent_releases = Release.query.filter_by(project_id=project.id).order_by(Release.created_at.desc()).limit(5).all()
 
-    # Latest release gating
-    latest_release = recent_releases[0] if recent_releases else None
+    # Match release gate decision strictly for the active scan
+    active_release = Release.query.filter_by(scan_id=active_scan.id).first() if active_scan else None
+    if active_release:
+        gate_status = active_release.status
+        gate_reason = active_release.reason
+        gate_version = active_release.version
+        blocking_findings = active_release.blocking_findings
+        review_findings = active_release.review_findings
+    elif active_scan:
+        from ..security.severity_engine import calculate_release_status
+        calc_status, calc_reason, b_count, r_count = calculate_release_status(findings, policy)
+        gate_status = active_scan.release_status or calc_status
+        gate_reason = calc_reason
+        gate_version = "v1.0.0"
+        blocking_findings = b_count
+        review_findings = r_count
+    else:
+        gate_status = "PASS"
+        gate_reason = "No security findings recorded."
+        gate_version = "v1.0.0"
+        blocking_findings = 0
+        review_findings = 0
 
     # OWASP distribution array formatted for charts
     owasp_chart_data = [
@@ -88,30 +123,27 @@ def get_dashboard_data():
         for s in SEVERITY_ORDER
     ]
 
-    # Current release policy
-    settings = AppSettings.query.first()
-    policy = settings.to_dict()['release_policy'] if settings else {}
-
     return jsonify({
         "status": "success",
         "empty": False,
         "project": project.to_dict(),
-        "latest_scan": latest_scan.to_dict() if latest_scan else None,
-        "security_score": latest_scan.security_score if latest_scan else 100.0,
+        "active_scan_id": active_scan.id if active_scan else None,
+        "latest_scan": active_scan.to_dict() if active_scan else None,
+        "security_score": active_scan.security_score if active_scan else 100.0,
         "release_gate": {
-            "status": latest_scan.release_status if latest_scan else "PASS",
-            "reason": latest_release.reason if latest_release else "No active release block.",
-            "version": latest_release.version if latest_release else "v1.0.0",
-            "blocking_findings": latest_release.blocking_findings if latest_release else 0,
-            "review_findings": latest_release.review_findings if latest_release else 0,
+            "status": gate_status,
+            "reason": gate_reason,
+            "version": gate_version,
+            "blocking_findings": blocking_findings,
+            "review_findings": review_findings,
         },
         "metrics": {
-            "critical": latest_scan.critical_count if latest_scan else 0,
-            "high": latest_scan.high_count if latest_scan else 0,
-            "medium": latest_scan.medium_count if latest_scan else 0,
-            "low": latest_scan.low_count if latest_scan else 0,
-            "informational": latest_scan.informational_count if latest_scan else 0,
-            "total_findings": latest_scan.total_findings if latest_scan else 0,
+            "critical": active_scan.critical_count if active_scan else 0,
+            "high": active_scan.high_count if active_scan else 0,
+            "medium": active_scan.medium_count if active_scan else 0,
+            "low": active_scan.low_count if active_scan else 0,
+            "informational": active_scan.informational_count if active_scan else 0,
+            "total_findings": active_scan.total_findings if active_scan else 0,
         },
         "charts": {
             "severity_distribution": sev_chart_data,

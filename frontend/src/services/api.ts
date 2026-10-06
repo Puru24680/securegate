@@ -66,8 +66,11 @@ export const api = {
   },
 
   // Dashboard
-  getDashboard: async (projectId?: number) => {
-    const query = projectId ? `?project_id=${projectId}` : '';
+  getDashboard: async (projectId?: number, scanId?: number) => {
+    const params = new URLSearchParams();
+    if (projectId) params.append('project_id', projectId.toString());
+    if (scanId) params.append('scan_id', scanId.toString());
+    const query = params.toString() ? `?${params.toString()}` : '';
     return request<DashboardData>(`/dashboard${query}`);
   },
 

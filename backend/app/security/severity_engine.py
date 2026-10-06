@@ -72,7 +72,7 @@ def calculate_security_score(findings: list) -> float:
         'High': 12.0,
         'Medium': 4.0,
         'Low': 1.0,
-        'Informational': 0.2,
+        'Informational': 0.0,
     }
 
     total_penalty = 0.0
@@ -120,28 +120,19 @@ def calculate_release_status(findings: list, policy: dict) -> tuple[str, str, in
         action = default_policy.get(severity.lower(), 'PASS').upper()
         if action == 'BLOCK':
             blocking_count += count
-            block_reasons.append(f"{count} {severity} severity finding{'s' if count > 1 else ''}")
+            block_reasons.append(f"{count} {severity}")
         elif action == 'REVIEW':
             review_count += count
-            review_reasons.append(f"{count} {severity} severity finding{'s' if count > 1 else ''}")
+            review_reasons.append(f"{count} {severity}")
 
     if blocking_count > 0:
-        reason = "Release blocked due to: " + ", ".join(block_reasons) + "."
+        reason = f"Release blocked due to: {', '.join(block_reasons)}. Critical/High findings violate the release policy."
         return 'BLOCK', reason, blocking_count, review_count
     elif review_count > 0:
-        reason = "Release requires review due to: " + ", ".join(review_reasons) + "."
+        reason = f"Release requires review due to: {', '.join(review_reasons)}. Medium severity findings require security sign-off."
         return 'REVIEW', reason, 0, review_count
     else:
-        total = sum(counts.values())
-        if total == 0:
-            reason = "No security findings detected. Release cleared."
-        else:
-            low_info = []
-            if counts['Low'] > 0:
-                low_info.append(f"{counts['Low']} Low")
-            if counts['Informational'] > 0:
-                low_info.append(f"{counts['Informational']} Informational")
-            reason = f"Release passed. Only minor findings: {', '.join(low_info)}." if low_info else "Release cleared. No significant findings."
+        reason = "Release passed. No High or Critical vulnerabilities were detected. The release can proceed."
         return 'PASS', reason, 0, 0
 
 

@@ -14,6 +14,7 @@ export function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [projects, setProjects] = useState<Project[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<number | undefined>(undefined);
+  const [activeScanId, setActiveScanId] = useState<number | null>(null);
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loadingDashboard, setLoadingDashboard] = useState(true);
   const [reportScanId, setReportScanId] = useState<number | null>(null);
@@ -51,17 +52,20 @@ export function App() {
   // Load dashboard data when active project changes
   useEffect(() => {
     if (activeProjectId) {
-      loadDashboard(activeProjectId);
+      loadDashboard(activeProjectId, activeScanId || undefined);
     }
   }, [activeProjectId]);
 
-  const loadDashboard = async (projId: number) => {
+  const loadDashboard = async (projId: number, scanId?: number) => {
     try {
       setLoadingDashboard(true);
-      const data = await api.getDashboard(projId);
+      const data = await api.getDashboard(projId, scanId);
       setDashboardData(data);
       if (data.latest_scan) {
         setReportScanId(data.latest_scan.id);
+        if (!scanId) {
+          setActiveScanId(data.latest_scan.id);
+        }
       }
     } catch (err) {
       console.error('Failed to load dashboard:', err);
@@ -78,6 +82,7 @@ export function App() {
       setProjects(projs);
       if (projs.length > 0) {
         setActiveProjectId(projs[0].id);
+        setActiveScanId(null);
         await loadDashboard(projs[0].id);
       }
       setCurrentTab('dashboard');
@@ -89,10 +94,11 @@ export function App() {
   };
 
   const handleScanCompleted = async (scan: Scan) => {
-    if (activeProjectId) {
-      await loadDashboard(activeProjectId);
-    }
+    setActiveScanId(scan.id);
     setReportScanId(scan.id);
+    if (activeProjectId) {
+      await loadDashboard(activeProjectId, scan.id);
+    }
     setCurrentTab('dashboard');
   };
 
@@ -108,6 +114,7 @@ export function App() {
   };
 
   const activeProject = projects.find((p) => p.id === activeProjectId);
+  const currentActiveScanId = activeScanId || dashboardData?.latest_scan?.id;
 
   return (
     <DashboardLayout
@@ -115,7 +122,10 @@ export function App() {
       onSelectTab={setCurrentTab}
       projects={projects}
       activeProject={activeProject}
-      onSelectProject={(id) => setActiveProjectId(id)}
+      onSelectProject={(id) => {
+        setActiveProjectId(id);
+        setActiveScanId(null);
+      }}
       latestScan={dashboardData?.latest_scan}
       onScanCompleted={handleScanCompleted}
       onResetDemo={handleResetDemo}
@@ -138,19 +148,28 @@ export function App() {
       {currentTab === 'findings' && (
         <FindingsPage
           activeProjectId={activeProjectId}
-          initialScanId={dashboardData?.latest_scan?.id}
+          initialScanId={currentActiveScanId}
         />
       )}
 
       {currentTab === 'scans' && (
         <ScansPage
           activeProjectId={activeProjectId}
+          activeScanId={currentActiveScanId}
           onOpenNewScan={() => setIsNewScanOpen(true)}
           onNavigateToReport={(scanId) => {
             setReportScanId(scanId);
             setCurrentTab('reports');
           }}
           onNavigateToFindings={() => setCurrentTab('findings')}
+          onSelectActiveScan={(scanId) => {
+            setActiveScanId(scanId);
+            setReportScanId(scanId);
+            if (activeProjectId) {
+              loadDashboard(activeProjectId, scanId);
+            }
+            setCurrentTab('dashboard');
+          }}
         />
       )}
 
@@ -167,7 +186,7 @@ export function App() {
       {currentTab === 'reports' && (
         <ReportsPage
           activeProjectId={activeProjectId}
-          initialScanId={reportScanId}
+          initialScanId={reportScanId || currentActiveScanId}
         />
       )}
 
@@ -177,6 +196,7 @@ export function App() {
           activeProjectId={activeProjectId}
           onSelectProject={(id) => {
             setActiveProjectId(id);
+            setActiveScanId(null);
             setCurrentTab('dashboard');
           }}
           onRefreshProjects={loadProjects}

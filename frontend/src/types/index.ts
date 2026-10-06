@@ -71,6 +71,13 @@ export interface Release {
   scan_identifier?: string;
   security_score?: number;
   project_name?: string;
+  severity_counts?: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+    informational: number;
+  };
 }
 
 export interface ReleasePolicy {
@@ -95,6 +102,7 @@ export interface AppSettings {
 
 export interface DashboardData {
   empty: boolean;
+  active_scan_id?: number;
   project?: Project;
   latest_scan?: Scan;
   security_score: number;
