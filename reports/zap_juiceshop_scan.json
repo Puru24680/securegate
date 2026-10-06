@@ -1,0 +1,146 @@
+{
+  "@version": "2.14.0",
+  "@generated": "2024-10-06T12:00:00Z",
+  "site": [
+    {
+      "@name": "http://localhost:3000",
+      "@host": "localhost",
+      "@port": "3000",
+      "@ssl": "false",
+      "alerts": [
+        {
+          "pluginId": "40018",
+          "alertRef": "40018-1",
+          "alert": "SQL Injection",
+          "name": "SQL Injection",
+          "riskcode": "3",
+          "confidence": "3",
+          "riskdesc": "High (High)",
+          "desc": "SQL injection may be possible. The user-supplied input in the search query parameter is directly concatenated into a dynamic SQLite command without parameterized sanitization. An attacker can manipulate backend queries, extract user password hashes, or bypass authentication.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/rest/products/search?q=apple%27%29%29+UNION+SELECT+1%2Cid%2Cemail%2Cpassword%2C4%2C5%2C6%2C7%2C8%2C9+FROM+Users--",
+              "method": "GET",
+              "param": "q",
+              "attack": "apple')) UNION SELECT 1,id,email,password,4,5,6,7,8,9 FROM Users--",
+              "evidence": "SQLITE_ERROR: near \"UNION\": syntax error"
+            }
+          ],
+          "solution": "Refactor database access to use parameterized prepared statements or an Object-Relational Mapper (ORM) with strict query binding. Never concatenate user-supplied input directly into SQL strings.",
+          "reference": "https://owasp.org/www-community/attacks/SQL_Injection\nhttps://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+          "cweid": "89",
+          "wascid": "19"
+        },
+        {
+          "pluginId": "40012",
+          "alertRef": "40012-1",
+          "alert": "Cross Site Scripting (Reflected)",
+          "name": "Cross Site Scripting (Reflected)",
+          "riskcode": "3",
+          "confidence": "3",
+          "riskdesc": "High (High)",
+          "desc": "A reflected cross-site scripting (XSS) vulnerability was identified in the feedback submission endpoint. Malicious JavaScript injected via the comment parameter is echoed verbatim into the client DOM without HTML entity encoding.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/api/Feedbacks",
+              "method": "POST",
+              "param": "comment",
+              "attack": "<iframe src=\"javascript:alert('XSS')\">",
+              "evidence": "<iframe src=\"javascript:alert('XSS')\">"
+            }
+          ],
+          "solution": "Contextually encode all user-controlled data before rendering into HTML, JavaScript, CSS, or URL attributes. Implement a strict Content-Security-Policy (CSP).",
+          "reference": "https://owasp.org/www-community/attacks/xss/\nhttps://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+          "cweid": "79",
+          "wascid": "8"
+        },
+        {
+          "pluginId": "10202",
+          "alertRef": "10202-1",
+          "alert": "Absence of Anti-CSRF Tokens",
+          "name": "Absence of Anti-CSRF Tokens",
+          "riskcode": "2",
+          "confidence": "2",
+          "riskdesc": "Medium (Medium)",
+          "desc": "No Anti-CSRF tokens were found in the state-changing HTML submission forms. Attackers can forge cross-origin POST requests on behalf of authenticated users.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/profile",
+              "method": "POST",
+              "param": "username",
+              "evidence": "<form action=\"/profile\" method=\"POST\">"
+            }
+          ],
+          "solution": "Implement cryptographically strong Synchronizer CSRF tokens or configure SameSite=Lax/Strict cookie attributes on session identifiers.",
+          "reference": "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+          "cweid": "352",
+          "wascid": "9"
+        },
+        {
+          "pluginId": "10020",
+          "alertRef": "10020-1",
+          "alert": "Missing Anti-clickjacking Header",
+          "name": "Missing Anti-clickjacking Header",
+          "riskcode": "2",
+          "confidence": "3",
+          "riskdesc": "Medium (High)",
+          "desc": "The HTTP response does not include the X-Frame-Options or Content-Security-Policy frame-ancestors header. The application can be framed in malicious third-party websites.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/#/login",
+              "method": "GET",
+              "evidence": "X-Frame-Options header missing"
+            }
+          ],
+          "solution": "Configure the web server to emit 'X-Frame-Options: DENY' or 'Content-Security-Policy: frame-ancestors 'none';'.",
+          "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+          "cweid": "1021",
+          "wascid": "15"
+        },
+        {
+          "pluginId": "10010",
+          "alertRef": "10010-1",
+          "alert": "Cookie No HttpOnly Flag",
+          "name": "Cookie No HttpOnly Flag",
+          "riskcode": "1",
+          "confidence": "3",
+          "riskdesc": "Low (High)",
+          "desc": "A cookie has been set without the HttpOnly attribute. This permits client-side JavaScript scripts to access the cookie value, increasing risk of credential exfiltration via XSS.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/rest/user/authentication-details",
+              "method": "GET",
+              "param": "token",
+              "evidence": "Set-Cookie: token=eyJhbGci...; Path=/; Secure"
+            }
+          ],
+          "solution": "Ensure that the HttpOnly flag is set on sensitive session and token cookies.",
+          "reference": "https://owasp.org/www-community/HttpOnly",
+          "cweid": "1004",
+          "wascid": "13"
+        },
+        {
+          "pluginId": "10037",
+          "alertRef": "10037-1",
+          "alert": "Server Leaks Information via 'X-Powered-By' HTTP Response Header",
+          "name": "Server Leaks Information via 'X-Powered-By' HTTP Response Header",
+          "riskcode": "1",
+          "confidence": "3",
+          "riskdesc": "Low (High)",
+          "desc": "The web server response reveals internal runtime details via the 'X-Powered-By: Express' header. This assists threat actors in fingerprinting specific software versions.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/",
+              "method": "GET",
+              "evidence": "X-Powered-By: Express"
+            }
+          ],
+          "solution": "Disable or strip the X-Powered-By header in Express middleware: app.disable('x-powered-by').",
+          "reference": "https://expressjs.com/en/advanced/best-practice-security.html",
+          "cweid": "200",
+          "wascid": "13"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "@version": "2.14.0",
+  "@generated": "2024-10-06T12:00:00Z",
+  "site": [
+    {
+      "@name": "http://localhost:3000",
+      "alerts": [
+        {
+          "pluginId": "10049",
+          "alertRef": "10049-1",
+          "alert": "Content-Cache Directives",
+          "name": "Content-Cache Directives",
+          "riskcode": "0",
+          "confidence": "2",
+          "riskdesc": "Informational (Medium)",
+          "desc": "Cache-Control header is present.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/assets/logo.png",
+              "method": "GET"
+            }
+          ],
+          "solution": "Standard static asset caching.",
+          "cweid": "-1"
+        }
+      ]
+    }
+  ]
+}

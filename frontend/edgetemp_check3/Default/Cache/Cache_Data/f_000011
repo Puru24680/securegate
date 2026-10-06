@@ -1,0 +1,305 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/TopBar.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f30b7db4"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=f30b7db4"; const useEffect = __vite__cjsImport3_react["useEffect"]; const useRef = __vite__cjsImport3_react["useRef"];
+import {
+  UploadCloud,
+  User,
+  Search,
+  Command
+} from "/node_modules/.vite/deps/lucide-react.js?v=f02eefad";
+export const TopBar = ({
+  projects,
+  activeProject,
+  onSelectProject,
+  latestScan,
+  onOpenNewScan,
+  apiConnected,
+  onTriggerPreset
+}) => {
+  _s();
+  const searchInputRef = useRef(null);
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) {
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      } else if (e.key.toLowerCase() === "b" && onTriggerPreset) {
+        onTriggerPreset("juiceshop");
+      } else if (e.key.toLowerCase() === "p" && onTriggerPreset) {
+        onTriggerPreset("clean");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onTriggerPreset]);
+  return /* @__PURE__ */ jsxDEV("header", { className: "h-20 px-8 bg-white border-b border-slate-200/80 flex items-center justify-between sticky top-0 z-20 shadow-[0_1px_3px_rgba(0,0,0,0.01)] select-none", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-4", children: /* @__PURE__ */ jsxDEV("div", { children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxDEV("h1", { className: "text-base font-bold text-slate-900 font-display", children: "Console" }, void 0, false, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+          lineNumber: 86,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { className: "text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold flex items-center gap-1", children: [
+          /* @__PURE__ */ jsxDEV("span", { className: "w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" }, void 0, false, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+            lineNumber: 90,
+            columnNumber: 15
+          }, this),
+          "LIVE"
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+          lineNumber: 89,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 85,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-400 font-sans hidden sm:block", children: "Pre-Release DAST Verification & Enforcement Gate" }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 94,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+      lineNumber: 84,
+      columnNumber: 9
+    }, this) }, void 0, false, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+      lineNumber: 83,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "hidden md:flex items-center gap-2 px-4 py-2 rounded-full glass-surface-subtle w-72 lg:w-96 text-slate-400 text-xs focus-within:border-emerald-500/70 focus-within:bg-white focus-within:shadow-[0_4px_16px_rgba(16,185,129,0.12)] transition-all", children: [
+      /* @__PURE__ */ jsxDEV(Search, { className: "w-3.5 h-3.5 text-slate-400 flex-shrink-0" }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 102,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "input",
+        {
+          ref: searchInputRef,
+          type: "text",
+          placeholder: "Search findings, CWEs, endpoints...",
+          className: "bg-transparent border-none text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-sans"
+        },
+        void 0,
+        false,
+        {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+          lineNumber: 103,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV("kbd", { className: "px-1.5 py-0.5 rounded-md bg-white/80 border border-slate-200/80 text-[10px] text-slate-600 font-mono font-bold flex items-center gap-0.5 shadow-xs", children: [
+        /* @__PURE__ */ jsxDEV(Command, { className: "w-2.5 h-2.5" }, void 0, false, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+          lineNumber: 110,
+          columnNumber: 11
+        }, this),
+        " K"
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 109,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+      lineNumber: 101,
+      columnNumber: 7
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-3", children: [
+      onTriggerPreset && /* @__PURE__ */ jsxDEV("div", { className: "hidden lg:flex items-center gap-2", children: [
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => onTriggerPreset("juiceshop"),
+            className: "px-3.5 py-1.5 text-xs font-sans rounded-full btn-rose-glass font-medium flex items-center gap-2 group cursor-pointer",
+            title: "Press 'B' key to simulate block",
+            children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] group-hover:scale-125 transition-transform" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 124,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "font-semibold text-rose-800", children: "Simulate Block" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 125,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("kbd", { className: "px-1.5 py-0.2 rounded bg-white/70 border border-rose-200/80 text-[9px] font-mono text-rose-800 font-bold ml-0.5 shadow-xs", children: "B" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 126,
+                columnNumber: 15
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+            lineNumber: 119,
+            columnNumber: 13
+          },
+          this
+        ),
+        /* @__PURE__ */ jsxDEV(
+          "button",
+          {
+            onClick: () => onTriggerPreset("clean"),
+            className: "px-3.5 py-1.5 text-xs font-sans rounded-full btn-emerald-glass font-medium flex items-center gap-2 group cursor-pointer",
+            title: "Press 'P' key to simulate pass",
+            children: [
+              /* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:scale-125 transition-transform" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 135,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "font-semibold text-emerald-800", children: "Simulate Pass" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 136,
+                columnNumber: 15
+              }, this),
+              /* @__PURE__ */ jsxDEV("kbd", { className: "px-1.5 py-0.2 rounded bg-white/70 border border-emerald-200/80 text-[9px] font-mono text-emerald-800 font-bold ml-0.5 shadow-xs", children: "P" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 137,
+                columnNumber: 15
+              }, this)
+            ]
+          },
+          void 0,
+          true,
+          {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+            lineNumber: 130,
+            columnNumber: 13
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 118,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "hidden xl:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full btn-glass-pill text-xs font-sans", children: [
+        /* @__PURE__ */ jsxDEV("span", { className: "text-slate-400 text-[11px] font-mono font-medium", children: "NODE:" }, void 0, false, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+          lineNumber: 146,
+          columnNumber: 11
+        }, this),
+        /* @__PURE__ */ jsxDEV(
+          "select",
+          {
+            value: activeProject?.id || "",
+            onChange: (e) => onSelectProject(Number(e.target.value)),
+            className: "bg-transparent text-slate-800 font-bold focus:outline-none cursor-pointer text-xs",
+            children: projects.map(
+              (p) => /* @__PURE__ */ jsxDEV("option", { value: p.id, className: "bg-white text-slate-900 font-medium", children: p.name }, p.id, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+                lineNumber: 153,
+                columnNumber: 13
+              }, this)
+            )
+          },
+          void 0,
+          false,
+          {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+            lineNumber: 147,
+            columnNumber: 11
+          },
+          this
+        )
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 145,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: onOpenNewScan,
+          className: "flex items-center gap-2 px-4.5 py-2 rounded-full btn-emerald-glow text-xs font-bold cursor-pointer",
+          children: [
+            /* @__PURE__ */ jsxDEV(UploadCloud, { className: "w-3.5 h-3.5" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+              lineNumber: 165,
+              columnNumber: 11
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { className: "hidden sm:inline", children: "Import ZAP" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+              lineNumber: 166,
+              columnNumber: 11
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+          lineNumber: 161,
+          columnNumber: 9
+        },
+        this
+      ),
+      /* @__PURE__ */ jsxDEV("div", { className: "w-9 h-9 rounded-full btn-glass-pill flex items-center justify-center text-slate-700 font-bold text-xs cursor-pointer", children: /* @__PURE__ */ jsxDEV(User, { className: "w-4 h-4 text-slate-600" }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 171,
+        columnNumber: 11
+      }, this) }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+        lineNumber: 170,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+      lineNumber: 115,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx",
+    lineNumber: 81,
+    columnNumber: 5
+  }, this);
+};
+_s(TopBar, "G1SYZ8bsOQ5xM7oTDj/ahiJW0QY=");
+_c = TopBar;
+var _c;
+$RefreshReg$(_c, "TopBar");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/components/TopBar.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QVMyQjtBQUFBQSxjQUFJLENBQUNDLE1BQ2IsdUJBQUMsWUFBa0IsT0FBT0EsRUFBRUosSUFBSSxXQUFVLHVDQUN2Q0ksWUFBRUMsUUFEUUQsRUFBRUosSUFBZjtBQUFBO0FBQUE7QUFBQTtBQUFBLHFCQUVBO0FBQUEsWUFDRDtBQUFBO0FBQUEsVUFUSDtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsUUFVQTtBQUFBLFdBWkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQWFBO0FBQUEsTUFHQTtBQUFBLFFBQUM7QUFBQTtBQUFBLFVBQ0MsU0FBU3BCO0FBQUFBLFVBQ1QsV0FBVTtBQUFBLFVBRVY7QUFBQSxtQ0FBQyxlQUFZLFdBQVUsaUJBQXZCO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBQW9DO0FBQUEsWUFDcEMsdUJBQUMsVUFBSyxXQUFVLG9CQUFtQiwwQkFBbkM7QUFBQTtBQUFBO0FBQUE7QUFBQSxtQkFBNkM7QUFBQTtBQUFBO0FBQUEsUUFML0M7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLE1BTUE7QUFBQSxNQUdBLHVCQUFDLFNBQUksV0FBVSx3SEFDYixpQ0FBQyxRQUFLLFdBQVUsNEJBQWhCO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBd0MsS0FEMUM7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUVBO0FBQUEsU0F6REY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQTBEQTtBQUFBLE9BNUZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0E2RkE7QUFFSjtBQUFFRyxHQWpJV1IsUUFBNkI7QUFBQSxLQUE3QkE7QUFBNkIsSUFBQStCO0FBQUEsYUFBQUEsSUFBQSIsIm5hbWVzIjpbInVzZUVmZmVjdCIsInVzZVJlZiIsIlVwbG9hZENsb3VkIiwiVXNlciIsIlNlYXJjaCIsIkNvbW1hbmQiLCJUb3BCYXIiLCJwcm9qZWN0cyIsImFjdGl2ZVByb2plY3QiLCJvblNlbGVjdFByb2plY3QiLCJsYXRlc3RTY2FuIiwib25PcGVuTmV3U2NhbiIsImFwaUNvbm5lY3RlZCIsIm9uVHJpZ2dlclByZXNldCIsIl9zIiwic2VhcmNoSW5wdXRSZWYiLCJoYW5kbGVLZXlEb3duIiwiZSIsImluY2x1ZGVzIiwidGFyZ2V0IiwidGFnTmFtZSIsIm1ldGFLZXkiLCJjdHJsS2V5Iiwia2V5IiwidG9Mb3dlckNhc2UiLCJwcmV2ZW50RGVmYXVsdCIsImN1cnJlbnQiLCJmb2N1cyIsIndpbmRvdyIsImFkZEV2ZW50TGlzdGVuZXIiLCJyZW1vdmVFdmVudExpc3RlbmVyIiwiaWQiLCJOdW1iZXIiLCJ2YWx1ZSIsIm1hcCIsInAiLCJuYW1lIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiVG9wQmFyLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlRWZmZWN0LCB1c2VSZWYgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBQcm9qZWN0LCBTY2FuIH0gZnJvbSAnLi4vdHlwZXMnO1xuaW1wb3J0IHtcbiAgVXBsb2FkQ2xvdWQsXG4gIENoZWNrQ2lyY2xlMixcbiAgQ2xvY2ssXG4gIExheWVycyxcbiAgU2hpZWxkQ2hlY2ssXG4gIFVzZXIsXG4gIFNlYXJjaCxcbiAgQ29tbWFuZCxcbiAgUGxheSxcbiAgQmVsbCxcbiAgU2V0dGluZ3MgYXMgU2V0dGluZ3NJY29uLFxuICBaYXAsXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5cbmludGVyZmFjZSBUb3BCYXJQcm9wcyB7XG4gIHByb2plY3RzOiBQcm9qZWN0W107XG4gIGFjdGl2ZVByb2plY3Q/OiBQcm9qZWN0O1xuICBvblNlbGVjdFByb2plY3Q6IChwcm9qZWN0SWQ6IG51bWJlcikgPT4gdm9pZDtcbiAgbGF0ZXN0U2Nhbj86IFNjYW47XG4gIG9uT3Blbk5ld1NjYW46ICgpID0+IHZvaWQ7XG4gIGFwaUNvbm5lY3RlZDogYm9vbGVhbjtcbiAgb25UcmlnZ2VyUHJlc2V0PzogKHByZXNldDogJ2p1aWNlc2hvcCcgfCAnY2xlYW4nIHwgJ21lZGl1bScpID0+IHZvaWQ7XG59XG5cbmV4cG9ydCBjb25zdCBUb3BCYXI6IFJlYWN0LkZDPFRvcEJhclByb3BzPiA9ICh7XG4gIHByb2plY3RzLFxuICBhY3RpdmVQcm9qZWN0LFxuICBvblNlbGVjdFByb2plY3QsXG4gIGxhdGVzdFNjYW4sXG4gIG9uT3Blbk5ld1NjYW4sXG4gIGFwaUNvbm5lY3RlZCxcbiAgb25UcmlnZ2VyUHJlc2V0LFxufSkgPT4ge1xuICBjb25zdCBzZWFyY2hJbnB1dFJlZiA9IHVzZVJlZjxIVE1MSW5wdXRFbGVtZW50PihudWxsKTtcblxuICAvLyBLZXlib2FyZCBzaG9ydGN1dCBsaXN0ZW5lciBmb3IgdHJhZGluZy1ncmFkZSByZXNwb25zaXZlbmVzc1xuICB1c2VFZmZlY3QoKCkgPT4ge1xuICAgIGNvbnN0IGhhbmRsZUtleURvd24gPSAoZTogS2V5Ym9hcmRFdmVudCkgPT4ge1xuICAgICAgLy8gSWdub3JlIGlmIHR5cGluZyBpbnNpZGUgaW5wdXQgb3IgdGV4dGFyZWFcbiAgICAgIGlmIChbJ0lOUFVUJywgJ1RFWFRBUkVBJywgJ1NFTEVDVCddLmluY2x1ZGVzKChlLnRhcmdldCBhcyBIVE1MRWxlbWVudCkudGFnTmFtZSkpIHtcbiAgICAgICAgcmV0dXJuO1xuICAgICAgfVxuXG4gICAgICBpZiAoKGUubWV0YUtleSB8fCBlLmN0cmxLZXkpICYmIGUua2V5LnRvTG93ZXJDYXNlKCkgPT09ICdrJykge1xuICAgICAgICBlLnByZXZlbnREZWZhdWx0KCk7XG4gICAgICAgIHNlYXJjaElucHV0UmVmLmN1cnJlbnQ/LmZvY3VzKCk7XG4gICAgICB9IGVsc2UgaWYgKGUua2V5LnRvTG93ZXJDYXNlKCkgPT09ICdiJyAmJiBvblRyaWdnZXJQcmVzZXQpIHtcbiAgICAgICAgb25UcmlnZ2VyUHJlc2V0KCdqdWljZXNob3AnKTtcbiAgICAgIH0gZWxzZSBpZiAoZS5rZXkudG9Mb3dlckNhc2UoKSA9PT0gJ3AnICYmIG9uVHJpZ2dlclByZXNldCkge1xuICAgICAgICBvblRyaWdnZXJQcmVzZXQoJ2NsZWFuJyk7XG4gICAgICB9XG4gICAgfTtcblxuICAgIHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKCdrZXlkb3duJywgaGFuZGxlS2V5RG93bik7XG4gICAgcmV0dXJuICgpID0+IHdpbmRvdy5yZW1vdmVFdmVudExpc3RlbmVyKCdrZXlkb3duJywgaGFuZGxlS2V5RG93bik7XG4gIH0sIFtvblRyaWdnZXJQcmVzZXRdKTtcblxuICByZXR1cm4gKFxuICAgIDxoZWFkZXIgY2xhc3NOYW1lPVwiaC0yMCBweC04IGJnLXdoaXRlIGJvcmRlci1iIGJvcmRlci1zbGF0ZS0yMDAvODAgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIHN0aWNreSB0b3AtMCB6LTIwIHNoYWRvdy1bMF8xcHhfM3B4X3JnYmEoMCwwLDAsMC4wMSldIHNlbGVjdC1ub25lXCI+XG4gICAgICB7LyogTGVmdDogQnJlYWRjcnVtYnMgJiBMaXZlIEVuZ2luZSBUZWxlbWV0cnkgKi99XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC00XCI+XG4gICAgICAgIDxkaXY+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMlwiPlxuICAgICAgICAgICAgPGgxIGNsYXNzTmFtZT1cInRleHQtYmFzZSBmb250LWJvbGQgdGV4dC1zbGF0ZS05MDAgZm9udC1kaXNwbGF5XCI+XG4gICAgICAgICAgICAgIENvbnNvbGVcbiAgICAgICAgICAgIDwvaDE+XG4gICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LVsxMHB4XSBmb250LW1vbm8gcHgtMiBweS0wLjUgcm91bmRlZC1mdWxsIGJnLWVtZXJhbGQtNTAgdGV4dC1lbWVyYWxkLTcwMCBib3JkZXIgYm9yZGVyLWVtZXJhbGQtMjAwIGZvbnQtYm9sZCBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMVwiPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ3LTEuNSBoLTEuNSByb3VuZGVkLWZ1bGwgYmctZW1lcmFsZC01MDAgYW5pbWF0ZS1wdWxzZVwiIC8+XG4gICAgICAgICAgICAgIExJVkVcbiAgICAgICAgICAgIDwvc3Bhbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8cCBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtc2xhdGUtNDAwIGZvbnQtc2FucyBoaWRkZW4gc206YmxvY2tcIj5cbiAgICAgICAgICAgIFByZS1SZWxlYXNlIERBU1QgVmVyaWZpY2F0aW9uICYgRW5mb3JjZW1lbnQgR2F0ZVxuICAgICAgICAgIDwvcD5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIENlbnRlcjogU2VhcmNoIENhcHN1bGUgd2l0aCBTaG9ydGN1dCBLZXkgKi99XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImhpZGRlbiBtZDpmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBweC00IHB5LTIgcm91bmRlZC1mdWxsIGdsYXNzLXN1cmZhY2Utc3VidGxlIHctNzIgbGc6dy05NiB0ZXh0LXNsYXRlLTQwMCB0ZXh0LXhzIGZvY3VzLXdpdGhpbjpib3JkZXItZW1lcmFsZC01MDAvNzAgZm9jdXMtd2l0aGluOmJnLXdoaXRlIGZvY3VzLXdpdGhpbjpzaGFkb3ctWzBfNHB4XzE2cHhfcmdiYSgxNiwxODUsMTI5LDAuMTIpXSB0cmFuc2l0aW9uLWFsbFwiPlxuICAgICAgICA8U2VhcmNoIGNsYXNzTmFtZT1cInctMy41IGgtMy41IHRleHQtc2xhdGUtNDAwIGZsZXgtc2hyaW5rLTBcIiAvPlxuICAgICAgICA8aW5wdXRcbiAgICAgICAgICByZWY9e3NlYXJjaElucHV0UmVmfVxuICAgICAgICAgIHR5cGU9XCJ0ZXh0XCJcbiAgICAgICAgICBwbGFjZWhvbGRlcj1cIlNlYXJjaCBmaW5kaW5ncywgQ1dFcywgZW5kcG9pbnRzLi4uXCJcbiAgICAgICAgICBjbGFzc05hbWU9XCJiZy10cmFuc3BhcmVudCBib3JkZXItbm9uZSB0ZXh0LXhzIHRleHQtc2xhdGUtODAwIHBsYWNlaG9sZGVyLXNsYXRlLTQwMCBmb2N1czpvdXRsaW5lLW5vbmUgdy1mdWxsIGZvbnQtc2Fuc1wiXG4gICAgICAgIC8+XG4gICAgICAgIDxrYmQgY2xhc3NOYW1lPVwicHgtMS41IHB5LTAuNSByb3VuZGVkLW1kIGJnLXdoaXRlLzgwIGJvcmRlciBib3JkZXItc2xhdGUtMjAwLzgwIHRleHQtWzEwcHhdIHRleHQtc2xhdGUtNjAwIGZvbnQtbW9ubyBmb250LWJvbGQgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTAuNSBzaGFkb3cteHNcIj5cbiAgICAgICAgICA8Q29tbWFuZCBjbGFzc05hbWU9XCJ3LTIuNSBoLTIuNVwiIC8+IEtcbiAgICAgICAgPC9rYmQ+XG4gICAgICA8L2Rpdj5cblxuICAgICAgey8qIFJpZ2h0OiBRdWljayBDb250cm9scywgRmFzdCBTaW11bGF0aW9uIEJ1dHRvbnMgJiBBY3Rpb24gVHJpZ2dlcnMgKi99XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGdhcC0zXCI+XG4gICAgICAgIHsvKiBGYXN0IDEtQ2xpY2sgU2ltdWxhdGlvbiBCdXR0b25zIHdpdGggU2hvcnRjdXQgS2V5cyAqL31cbiAgICAgICAge29uVHJpZ2dlclByZXNldCAmJiAoXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJoaWRkZW4gbGc6ZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cbiAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25UcmlnZ2VyUHJlc2V0KCdqdWljZXNob3AnKX1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtMy41IHB5LTEuNSB0ZXh0LXhzIGZvbnQtc2FucyByb3VuZGVkLWZ1bGwgYnRuLXJvc2UtZ2xhc3MgZm9udC1tZWRpdW0gZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgZ3JvdXAgY3Vyc29yLXBvaW50ZXJcIlxuICAgICAgICAgICAgICB0aXRsZT1cIlByZXNzICdCJyBrZXkgdG8gc2ltdWxhdGUgYmxvY2tcIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ3LTIgaC0yIHJvdW5kZWQtZnVsbCBiZy1yb3NlLTUwMCBzaGFkb3ctWzBfMF84cHhfcmdiYSgyNDQsNjMsOTQsMC42KV0gZ3JvdXAtaG92ZXI6c2NhbGUtMTI1IHRyYW5zaXRpb24tdHJhbnNmb3JtXCIgLz5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwiZm9udC1zZW1pYm9sZCB0ZXh0LXJvc2UtODAwXCI+U2ltdWxhdGUgQmxvY2s8L3NwYW4+XG4gICAgICAgICAgICAgIDxrYmQgY2xhc3NOYW1lPVwicHgtMS41IHB5LTAuMiByb3VuZGVkIGJnLXdoaXRlLzcwIGJvcmRlciBib3JkZXItcm9zZS0yMDAvODAgdGV4dC1bOXB4XSBmb250LW1vbm8gdGV4dC1yb3NlLTgwMCBmb250LWJvbGQgbWwtMC41IHNoYWRvdy14c1wiPlxuICAgICAgICAgICAgICAgIEJcbiAgICAgICAgICAgICAgPC9rYmQ+XG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgb25DbGljaz17KCkgPT4gb25UcmlnZ2VyUHJlc2V0KCdjbGVhbicpfVxuICAgICAgICAgICAgICBjbGFzc05hbWU9XCJweC0zLjUgcHktMS41IHRleHQteHMgZm9udC1zYW5zIHJvdW5kZWQtZnVsbCBidG4tZW1lcmFsZC1nbGFzcyBmb250LW1lZGl1bSBmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBncm91cCBjdXJzb3ItcG9pbnRlclwiXG4gICAgICAgICAgICAgIHRpdGxlPVwiUHJlc3MgJ1AnIGtleSB0byBzaW11bGF0ZSBwYXNzXCJcbiAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidy0yIGgtMiByb3VuZGVkLWZ1bGwgYmctZW1lcmFsZC01MDAgc2hhZG93LVswXzBfOHB4X3JnYmEoMTYsMTg1LDEyOSwwLjYpXSBncm91cC1ob3ZlcjpzY2FsZS0xMjUgdHJhbnNpdGlvbi10cmFuc2Zvcm1cIiAvPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmb250LXNlbWlib2xkIHRleHQtZW1lcmFsZC04MDBcIj5TaW11bGF0ZSBQYXNzPC9zcGFuPlxuICAgICAgICAgICAgICA8a2JkIGNsYXNzTmFtZT1cInB4LTEuNSBweS0wLjIgcm91bmRlZCBiZy13aGl0ZS83MCBib3JkZXIgYm9yZGVyLWVtZXJhbGQtMjAwLzgwIHRleHQtWzlweF0gZm9udC1tb25vIHRleHQtZW1lcmFsZC04MDAgZm9udC1ib2xkIG1sLTAuNSBzaGFkb3cteHNcIj5cbiAgICAgICAgICAgICAgICBQXG4gICAgICAgICAgICAgIDwva2JkPlxuICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICl9XG5cbiAgICAgICAgey8qIFRhcmdldCBOb2RlIFNlbGVjdG9yICovfVxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImhpZGRlbiB4bDpmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMS41IHB4LTMuNSBweS0xLjUgcm91bmRlZC1mdWxsIGJ0bi1nbGFzcy1waWxsIHRleHQteHMgZm9udC1zYW5zXCI+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1zbGF0ZS00MDAgdGV4dC1bMTFweF0gZm9udC1tb25vIGZvbnQtbWVkaXVtXCI+Tk9ERTo8L3NwYW4+XG4gICAgICAgICAgPHNlbGVjdFxuICAgICAgICAgICAgdmFsdWU9e2FjdGl2ZVByb2plY3Q/LmlkIHx8ICcnfVxuICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBvblNlbGVjdFByb2plY3QoTnVtYmVyKGUudGFyZ2V0LnZhbHVlKSl9XG4gICAgICAgICAgICBjbGFzc05hbWU9XCJiZy10cmFuc3BhcmVudCB0ZXh0LXNsYXRlLTgwMCBmb250LWJvbGQgZm9jdXM6b3V0bGluZS1ub25lIGN1cnNvci1wb2ludGVyIHRleHQteHNcIlxuICAgICAgICAgID5cbiAgICAgICAgICAgIHtwcm9qZWN0cy5tYXAoKHApID0+IChcbiAgICAgICAgICAgICAgPG9wdGlvbiBrZXk9e3AuaWR9IHZhbHVlPXtwLmlkfSBjbGFzc05hbWU9XCJiZy13aGl0ZSB0ZXh0LXNsYXRlLTkwMCBmb250LW1lZGl1bVwiPlxuICAgICAgICAgICAgICAgIHtwLm5hbWV9XG4gICAgICAgICAgICAgIDwvb3B0aW9uPlxuICAgICAgICAgICAgKSl9XG4gICAgICAgICAgPC9zZWxlY3Q+XG4gICAgICAgIDwvZGl2PlxuXG4gICAgICAgIHsvKiBQcmltYXJ5IEltcG9ydCBaQVAgQnV0dG9uICovfVxuICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgb25DbGljaz17b25PcGVuTmV3U2Nhbn1cbiAgICAgICAgICBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBnYXAtMiBweC00LjUgcHktMiByb3VuZGVkLWZ1bGwgYnRuLWVtZXJhbGQtZ2xvdyB0ZXh0LXhzIGZvbnQtYm9sZCBjdXJzb3ItcG9pbnRlclwiXG4gICAgICAgID5cbiAgICAgICAgICA8VXBsb2FkQ2xvdWQgY2xhc3NOYW1lPVwidy0zLjUgaC0zLjVcIiAvPlxuICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cImhpZGRlbiBzbTppbmxpbmVcIj5JbXBvcnQgWkFQPC9zcGFuPlxuICAgICAgICA8L2J1dHRvbj5cblxuICAgICAgICB7LyogVXNlciBBdmF0YXIgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwidy05IGgtOSByb3VuZGVkLWZ1bGwgYnRuLWdsYXNzLXBpbGwgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgdGV4dC1zbGF0ZS03MDAgZm9udC1ib2xkIHRleHQteHMgY3Vyc29yLXBvaW50ZXJcIj5cbiAgICAgICAgICA8VXNlciBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtc2xhdGUtNjAwXCIgLz5cbiAgICAgICAgPC9kaXY+XG4gICAgICA8L2Rpdj5cbiAgICA8L2hlYWRlcj5cbiAgKTtcbn07XG4iXSwiZmlsZSI6IkM6L1VzZXJzL3B1cnUvLmdlbWluaS9hbnRpZ3Jhdml0eS9zY3JhdGNoL3NlY3VyZWdhdGUvZnJvbnRlbmQvc3JjL2NvbXBvbmVudHMvVG9wQmFyLnRzeCJ9

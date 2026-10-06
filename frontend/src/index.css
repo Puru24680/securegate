@@ -1,0 +1,242 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Calm, clean background */
+.bg-ambient-light {
+  background-color: #F8FAFC;
+}
+
+/* Premium Minimal SaaS Cards (Linear / Stripe style) */
+.sg-card {
+  background-color: #FFFFFF;
+  border-radius: 0.75rem; /* 12px */
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sg-card-interactive {
+  background-color: #FFFFFF;
+  border-radius: 0.75rem; /* 12px */
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
+}
+
+.sg-card-interactive:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 2px 5px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* Backward compatibility for fynix-card */
+.fynix-card {
+  background-color: #FFFFFF;
+  border-radius: 0.75rem;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+}
+
+.fynix-card-hover:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 2px 5px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* ==========================================================
+   MINIMAL PREMIUM SAAS BUTTON SYSTEM
+   ========================================================== */
+
+/* 1. Primary Emerald Action */
+.btn-emerald-glow,
+.btn-primary-emerald {
+  background-color: #059669;
+  color: #ffffff;
+  border: 1px solid #047857;
+  border-radius: 0.5rem; /* 8px */
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-emerald-glow:hover,
+.btn-primary-emerald:hover {
+  background-color: #047857;
+  border-color: #065f46;
+}
+
+.btn-emerald-glow:active,
+.btn-primary-emerald:active {
+  background-color: #065f46;
+  transform: translateY(0.5px);
+}
+
+/* 2. Secondary Neutral Button / Glass Pill Replacement */
+.btn-glass-pill,
+.btn-secondary {
+  background-color: #ffffff;
+  color: #0f172a;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.02);
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-glass-pill:hover,
+.btn-secondary:hover {
+  background-color: #F8FAFC;
+  border-color: #CBD5E1;
+  color: #0f172a;
+}
+
+.btn-glass-pill:active,
+.btn-secondary:active {
+  background-color: #F1F5F9;
+  transform: translateY(0.5px);
+}
+
+/* 3. Primary Dark / Slate Button */
+.btn-obsidian-glow,
+.btn-primary-dark {
+  background-color: #0F172A;
+  color: #ffffff;
+  border: 1px solid #0F172A;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.btn-obsidian-glow:hover,
+.btn-primary-dark:hover {
+  background-color: #1E293B;
+  border-color: #1E293B;
+  color: #ffffff;
+}
+
+.btn-obsidian-glow:active,
+.btn-primary-dark:active {
+  background-color: #334155;
+  transform: translateY(0.5px);
+}
+
+/* 4. Subtle simulation pill - Crimson */
+.btn-rose-glass {
+  background-color: #FFF1F2;
+  color: #BE123C;
+  border: 1px solid #FECDD3;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-rose-glass:hover {
+  background-color: #FFE4E6;
+  border-color: #FDA4AF;
+}
+
+/* 5. Subtle simulation pill - Emerald */
+.btn-emerald-glass {
+  background-color: #ECFDF5;
+  color: #047857;
+  border: 1px solid #A7F3D0;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-emerald-glass:hover {
+  background-color: #D1FAE5;
+  border-color: #6EE7B7;
+}
+
+/* 6. Filter Segmented Buttons */
+.btn-filter-active {
+  background-color: #0F172A;
+  color: #FFFFFF;
+  border-radius: 0.375rem;
+  font-weight: 500;
+}
+
+.btn-filter-inactive {
+  color: #64748B;
+  background-color: transparent;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-filter-inactive:hover {
+  color: #0F172A;
+  background-color: #F1F5F9;
+}
+
+/* Frosted surfaces simplified to clean borders */
+.glass-surface {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.02);
+}
+
+.glass-surface-subtle {
+  background-color: #F8FAFC;
+  border: 1px solid #E2E8F0;
+}
+
+/* Clean minimal scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}
+
+/* Unified typography */
+.font-mono,
+code,
+pre,
+kbd,
+samp {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-feature-settings: 'tnum', 'cv02', 'cv03', 'cv04';
+  letter-spacing: -0.01em;
+}
+
+.font-display {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Print styling for reports */
+@media print {
+  body {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

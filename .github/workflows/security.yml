@@ -1,0 +1,135 @@
+name: SecureGate Pre-Release Security Gate
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  security-gate:
+    name: OWASP ZAP Scan & SecureGate Evaluation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install SecureGate Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run SecureGate Unit & Gate Tests
+        run: |
+          cd backend
+          pytest -v tests/
+
+      - name: Start Target Application (OWASP Juice Shop)
+        run: |
+          docker run -d --name juiceshop -p 3000:3000 bkimminich/juice-shop
+          echo "Waiting for Juice Shop to warm up..."
+          timeout 60 bash -c 'until curl -s http://localhost:3000; do sleep 2; done'
+          echo "Target Juice Shop is online at http://localhost:3000"
+
+      - name: Pull OWASP ZAP Baseline Scanner
+        run: |
+          docker pull zaproxy/zap-stable
+
+      - name: Run OWASP ZAP Baseline Scan
+        # Scans target container and writes zap_report.json to current directory
+        run: |
+          mkdir -p scan-output
+          # Run ZAP baseline scan with JSON output
+          docker run --user root --network host -v $(pwd)/scan-output:/zap/wrk/:rw \
+            zaproxy/zap-stable zap-baseline.py \
+            -t http://localhost:3000 \
+            -J zap_report.json \
+            -r zap_report.html || true
+          echo "ZAP scan finished. Inspecting output:"
+          ls -la scan-output/
+
+      - name: Evaluate Release Gate with SecureGate Engine
+        id: gate_evaluation
+        run: |
+          python - << 'EOF'
+          import sys
+          import json
+          import os
+
+          sys.path.append(os.path.abspath('backend'))
+          from app.parsers.zap_parser import zap_parser
+          from app.security.severity_engine import (
+              enrich_finding,
+              calculate_security_score,
+              calculate_release_status
+          )
+
+          report_file = 'scan-output/zap_report.json'
+          if not os.path.exists(report_file):
+              print("No scan output generated, falling back to bundled sample report...")
+              report_file = 'reports/zap_juiceshop_scan.json'
+
+          with open(report_file, 'r', encoding='utf-8') as f:
+              raw_data = json.load(f)
+
+          findings = zap_parser.parse(raw_data)
+          print(f"[*] Parsed {len(findings)} normalized findings from ZAP report.")
+
+          enriched = []
+          for f in findings:
+              en = enrich_finding({
+                  'name': f.name,
+                  'severity': f.severity,
+                  'confidence': f.confidence,
+                  'url': f.url,
+                  'cwe_id': f.cwe_id
+              })
+              enriched.append(en)
+
+          policy = {
+              'critical': 'BLOCK',
+              'high': 'BLOCK',
+              'medium': 'REVIEW',
+              'low': 'PASS',
+              'informational': 'PASS'
+          }
+
+          score = calculate_security_score(enriched)
+          status, reason, blocking, review = calculate_release_status(enriched, policy)
+
+          print("=" * 60)
+          print(f"SECUREGATE RELEASE EVALUATION")
+          print(f"Security Posture Score: {score} / 100")
+          print(f"Gate Decision:          {status}")
+          print(f"Reason:                 {reason}")
+          print(f"Blocking Findings:      {blocking}")
+          print(f"Review Findings:        {review}")
+          print("=" * 60)
+
+          if status == 'BLOCK':
+              print("::error title=Release Blocked::Security gate failed! Critical/High vulnerabilities detected.")
+              sys.exit(1)
+          elif status == 'REVIEW':
+              print("::warning title=Review Required::Security gate flagged Medium findings requiring AppSec sign-off.")
+              sys.exit(0)
+          else:
+              print("::notice title=Release Cleared::All automated security gates passed.")
+              sys.exit(0)
+          EOF
+
+      - name: Upload Scan Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-security-scan-artifacts
+          path: |
+            scan-output/
+            reports/

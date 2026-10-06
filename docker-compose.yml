@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  # Deliberately vulnerable target application for demonstration
+  juiceshop:
+    image: bkimminich/juice-shop:latest
+    container_name: securegate-juiceshop
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=unsafe
+
+  # SecureGate DevSecOps Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: securegate-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - HOST=0.0.0.0
+      - FLASK_DEBUG=0
+      - DATABASE_URL=sqlite:///data/securegate.db
+      - TARGET_URL=http://juiceshop:3000
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+    volumes:
+      - backend-data:/app/data
+      - ./reports:/app/reports
+    depends_on:
+      - juiceshop
+
+  # SecureGate Modern Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: securegate-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+
+volumes:
+  backend-data:

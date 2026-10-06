@@ -1,0 +1,680 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/pages/SettingsPage.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=f30b7db4"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=f30b7db4"; const useState = __vite__cjsImport3_react["useState"]; const useEffect = __vite__cjsImport3_react["useEffect"];
+import { api } from "/src/services/api.ts?t=1791277234969";
+import {
+  ShieldCheck,
+  Save,
+  CheckCircle2,
+  Server,
+  Sparkles,
+  Key
+} from "/node_modules/.vite/deps/lucide-react.js?v=f02eefad";
+export const SettingsPage = () => {
+  _s();
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState(null);
+  const [policy, setPolicy] = useState({
+    critical: "BLOCK",
+    high: "BLOCK",
+    medium: "REVIEW",
+    low: "PASS",
+    informational: "PASS"
+  });
+  const [environment, setEnvironment] = useState("staging");
+  const [aiEnabled, setAiEnabled] = useState(true);
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getSettings();
+      setSettings(data);
+      if (data.release_policy) setPolicy(data.release_policy);
+      if (data.environment) setEnvironment(data.environment);
+      setAiEnabled(data.ai_analysis_enabled);
+    } catch (err) {
+      console.error("Failed to load settings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleSave = async (e) => {
+    e.preventDefault();
+    try {
+      setSaving(true);
+      setSuccessMsg(null);
+      const updated = await api.updateSettings({
+        release_policy: policy,
+        environment,
+        ai_analysis_enabled: aiEnabled
+      });
+      setSettings(updated);
+      setSuccessMsg("Release gate policy and settings saved successfully.");
+      setTimeout(() => setSuccessMsg(null), 4e3);
+    } catch (err) {
+      alert(`Failed to save settings: ${err}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "space-y-6 max-w-4xl mx-auto select-none", children: [
+    /* @__PURE__ */ jsxDEV("div", { children: [
+      /* @__PURE__ */ jsxDEV("h1", { className: "text-xl sm:text-2xl font-bold text-slate-900 tracking-tight", children: "Settings" }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 93,
+        columnNumber: 9
+      }, this),
+      /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500 mt-0.5", children: "Configure release gate decision matrix, environment settings, and AI parameters." }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 96,
+        columnNumber: 9
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+      lineNumber: 92,
+      columnNumber: 7
+    }, this),
+    successMsg && /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2", children: [
+      /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-emerald-600 flex-shrink-0" }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 103,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("span", { children: successMsg }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 104,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+      lineNumber: 102,
+      columnNumber: 7
+    }, this),
+    loading || !settings ? /* @__PURE__ */ jsxDEV("div", { className: "py-20 text-center text-slate-400 text-xs", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin mx-auto mb-2" }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 110,
+        columnNumber: 11
+      }, this),
+      "Loading platform configuration..."
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+      lineNumber: 109,
+      columnNumber: 7
+    }, this) : /* @__PURE__ */ jsxDEV("form", { onSubmit: handleSave, className: "space-y-5", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "p-5 sm:p-6 rounded-xl bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] space-y-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("h2", { className: "text-sm font-semibold text-slate-900 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-4 h-4 text-emerald-600" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 119,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Release gate decision matrix" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 120,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 118,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500 mt-0.5", children: "Determine automated gating verdicts for findings in each severity category." }, void 0, false, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 122,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 117,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-slate-800", children: "Critical findings" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 131,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-rose-600" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 134,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 130,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "select",
+              {
+                value: policy.critical,
+                onChange: (e) => setPolicy({ ...policy, critical: e.target.value }),
+                className: "w-full px-3 py-1.5 rounded-md bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 cursor-pointer",
+                children: [
+                  /* @__PURE__ */ jsxDEV("option", { value: "BLOCK", children: "BLOCK (Strict default)" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 141,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "REVIEW", children: "REVIEW" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 142,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "PASS", children: "PASS" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 143,
+                    columnNumber: 19
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 136,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 129,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-slate-800", children: "High findings" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 150,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-orange-500" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 153,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 149,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "select",
+              {
+                value: policy.high,
+                onChange: (e) => setPolicy({ ...policy, high: e.target.value }),
+                className: "w-full px-3 py-1.5 rounded-md bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 cursor-pointer",
+                children: [
+                  /* @__PURE__ */ jsxDEV("option", { value: "BLOCK", children: "BLOCK (Strict default)" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 160,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "REVIEW", children: "REVIEW" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 161,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "PASS", children: "PASS" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 162,
+                    columnNumber: 19
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 155,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 148,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-slate-800", children: "Medium findings" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 169,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-amber-500" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 172,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 168,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "select",
+              {
+                value: policy.medium,
+                onChange: (e) => setPolicy({ ...policy, medium: e.target.value }),
+                className: "w-full px-3 py-1.5 rounded-md bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 cursor-pointer",
+                children: [
+                  /* @__PURE__ */ jsxDEV("option", { value: "REVIEW", children: "REVIEW (Standard default)" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 179,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "BLOCK", children: "BLOCK" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 180,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "PASS", children: "PASS" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 181,
+                    columnNumber: 19
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 174,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 167,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "p-3.5 rounded-lg bg-slate-50 border border-slate-200 space-y-1.5", children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+              /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-semibold text-slate-800", children: "Low findings" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 188,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "w-2 h-2 rounded-full bg-sky-500" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 191,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 187,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "select",
+              {
+                value: policy.low,
+                onChange: (e) => setPolicy({ ...policy, low: e.target.value }),
+                className: "w-full px-3 py-1.5 rounded-md bg-white border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 cursor-pointer",
+                children: [
+                  /* @__PURE__ */ jsxDEV("option", { value: "PASS", children: "PASS (Permissive default)" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 198,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "REVIEW", children: "REVIEW" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 199,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "BLOCK", children: "BLOCK" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 200,
+                    columnNumber: 19
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 193,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 186,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 127,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 116,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "p-5 sm:p-6 rounded-xl bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] space-y-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { children: [
+          /* @__PURE__ */ jsxDEV("h2", { className: "text-sm font-semibold text-slate-900 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxDEV(Server, { className: "w-4 h-4 text-emerald-600" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 210,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Scanner and pipeline runtime" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 211,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 209,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500 mt-0.5", children: "Integration configuration for OWASP ZAP and CI/CD workflows." }, void 0, false, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 213,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 208,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "grid grid-cols-1 sm:grid-cols-2 gap-3.5", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "space-y-1", children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-medium text-slate-700", children: "Target deployment environment" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 220,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "select",
+              {
+                value: environment,
+                onChange: (e) => setEnvironment(e.target.value),
+                className: "w-full px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 capitalize cursor-pointer",
+                children: [
+                  /* @__PURE__ */ jsxDEV("option", { value: "development", children: "Development" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 228,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "staging", children: "Staging" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 229,
+                    columnNumber: 19
+                  }, this),
+                  /* @__PURE__ */ jsxDEV("option", { value: "production", children: "Production" }, void 0, false, {
+                    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                    lineNumber: 230,
+                    columnNumber: 19
+                  }, this)
+                ]
+              },
+              void 0,
+              true,
+              {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 223,
+                columnNumber: 17
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 219,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "space-y-1", children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-medium text-slate-700", children: "Primary dynamic scanner" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 235,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-700", children: "OWASP ZAP 2.14.0 (Baseline & Active DAST)" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 238,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 234,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "space-y-1", children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-medium text-slate-700", children: "CI/CD pipeline binding" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 244,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-700", children: "GitHub Actions (.github/workflows/security.yml)" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 247,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 243,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "space-y-1", children: [
+            /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-medium text-slate-700", children: "Local test target" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 253,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "px-3 py-1.5 rounded-md bg-slate-50 border border-slate-200 text-xs text-slate-700", children: "OWASP Juice Shop (port 3000)" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 256,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 252,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 218,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 207,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "p-5 sm:p-6 rounded-xl bg-white border border-slate-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.02)] space-y-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+          /* @__PURE__ */ jsxDEV("div", { children: [
+            /* @__PURE__ */ jsxDEV("h2", { className: "text-sm font-semibold text-slate-900 flex items-center gap-2", children: [
+              /* @__PURE__ */ jsxDEV(Sparkles, { className: "w-4 h-4 text-emerald-600" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 268,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { children: "AI security assistant layer" }, void 0, false, {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 269,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 267,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-slate-500 mt-0.5", children: "Generates plain-English vulnerability explanations and developer fix items." }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 271,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 266,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("label", { className: "relative inline-flex items-center cursor-pointer", children: [
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "checkbox",
+                checked: aiEnabled,
+                onChange: (e) => setAiEnabled(e.target.checked),
+                className: "sr-only peer"
+              },
+              void 0,
+              false,
+              {
+                fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+                lineNumber: 277,
+                columnNumber: 17
+              },
+              this
+            ),
+            /* @__PURE__ */ jsxDEV("div", { className: "w-10 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 283,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 276,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 265,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "p-3 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs", children: [
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center gap-2 text-slate-600", children: [
+            /* @__PURE__ */ jsxDEV(Key, { className: "w-3.5 h-3.5 text-slate-400" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 289,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "OpenAI API integration:" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 290,
+              columnNumber: 17
+            }, this)
+          ] }, void 0, true, {
+            fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+            lineNumber: 288,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "span",
+            {
+              className: `px-2 py-0.5 rounded text-[11px] font-medium ${settings.ai_api_key_configured ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-slate-100 text-slate-600"}`,
+              children: settings.ai_api_key_configured ? "Configured (Active)" : "Built-in local security models"
+            },
+            void 0,
+            false,
+            {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 292,
+              columnNumber: 15
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 287,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 264,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "flex justify-end pt-1", children: /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          type: "submit",
+          disabled: saving,
+          className: "px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors shadow-xs",
+          children: [
+            /* @__PURE__ */ jsxDEV(Save, { className: "w-3.5 h-3.5" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 313,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: saving ? "Saving..." : "Save settings" }, void 0, false, {
+              fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+              lineNumber: 314,
+              columnNumber: 15
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+          lineNumber: 308,
+          columnNumber: 13
+        },
+        this
+      ) }, void 0, false, {
+        fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+        lineNumber: 307,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+      lineNumber: 114,
+      columnNumber: 7
+    }, this)
+  ] }, void 0, true, {
+    fileName: "C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx",
+    lineNumber: 90,
+    columnNumber: 5
+  }, this);
+};
+_s(SettingsPage, "06glJyQVMsTj6nOS+BCjPdK42o4=");
+_c = SettingsPage;
+var _c;
+$RefreshReg$(_c, "SettingsPage");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("C:/Users/puru/.gemini/antigravity/scratch/securegate/frontend/src/pages/SettingsPage.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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QTtBQUFBLE9Bbk9KO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FxT0E7QUFFSjtBQUFFTCxHQWhTV0QsY0FBc0I7QUFBQSxLQUF0QkE7QUFBc0IsSUFBQXdDO0FBQUEsYUFBQUEsSUFBQSIsIm5hbWVzIjpbInVzZVN0YXRlIiwidXNlRWZmZWN0IiwiYXBpIiwiU2hpZWxkQ2hlY2siLCJTYXZlIiwiQ2hlY2tDaXJjbGUyIiwiU2VydmVyIiwiU3BhcmtsZXMiLCJLZXkiLCJTZXR0aW5nc1BhZ2UiLCJfcyIsInNldHRpbmdzIiwic2V0U2V0dGluZ3MiLCJsb2FkaW5nIiwic2V0TG9hZGluZyIsInNhdmluZyIsInNldFNhdmluZyIsInN1Y2Nlc3NNc2ciLCJzZXRTdWNjZXNzTXNnIiwicG9saWN5Iiwic2V0UG9saWN5IiwiY3JpdGljYWwiLCJoaWdoIiwibWVkaXVtIiwibG93IiwiaW5mb3JtYXRpb25hbCIsImVudmlyb25tZW50Iiwic2V0RW52aXJvbm1lbnQiLCJhaUVuYWJsZWQiLCJzZXRBaUVuYWJsZWQiLCJmZXRjaFNldHRpbmdzIiwiZGF0YSIsImdldFNldHRpbmdzIiwicmVsZWFzZV9wb2xpY3kiLCJhaV9hbmFseXNpc19lbmFibGVkIiwiZXJyIiwiY29uc29sZSIsImVycm9yIiwiaGFuZGxlU2F2ZSIsImUiLCJwcmV2ZW50RGVmYXVsdCIsInVwZGF0ZWQiLCJ1cGRhdGVTZXR0aW5ncyIsInNldFRpbWVvdXQiLCJhbGVydCIsInRhcmdldCIsInZhbHVlIiwiY2hlY2tlZCIsImFpX2FwaV9rZXlfY29uZmlndXJlZCIsIl9jIl0sImlnbm9yZUxpc3QiOltdLCJzb3VyY2VzIjpbIlNldHRpbmdzUGFnZS50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlLCB1c2VFZmZlY3QgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBBcHBTZXR0aW5ncywgUmVsZWFzZVBvbGljeSB9IGZyb20gJy4uL3R5cGVzJztcbmltcG9ydCB7IGFwaSB9IGZyb20gJy4uL3NlcnZpY2VzL2FwaSc7XG5pbXBvcnQge1xuICBTbGlkZXJzLFxuICBTaGllbGRDaGVjayxcbiAgU2F2ZSxcbiAgQ2hlY2tDaXJjbGUyLFxuICBTZXJ2ZXIsXG4gIFNwYXJrbGVzLFxuICBLZXksXG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5cbmV4cG9ydCBjb25zdCBTZXR0aW5nc1BhZ2U6IFJlYWN0LkZDID0gKCkgPT4ge1xuICBjb25zdCBbc2V0dGluZ3MsIHNldFNldHRpbmdzXSA9IHVzZVN0YXRlPEFwcFNldHRpbmdzIHwgbnVsbD4obnVsbCk7XG4gIGNvbnN0IFtsb2FkaW5nLCBzZXRMb2FkaW5nXSA9IHVzZVN0YXRlKGZhbHNlKTtcbiAgY29uc3QgW3NhdmluZywgc2V0U2F2aW5nXSA9IHVzZVN0YXRlKGZhbHNlKTtcbiAgY29uc3QgW3N1Y2Nlc3NNc2csIHNldFN1Y2Nlc3NNc2ddID0gdXNlU3RhdGU8c3RyaW5nIHwgbnVsbD4obnVsbCk7XG5cbiAgLy8gRm9ybSBzdGF0ZXNcbiAgY29uc3QgW3BvbGljeSwgc2V0UG9saWN5XSA9IHVzZVN0YXRlPFJlbGVhc2VQb2xpY3k+KHtcbiAgICBjcml0aWNhbDogJ0JMT0NLJyxcbiAgICBoaWdoOiAnQkxPQ0snLFxuICAgIG1lZGl1bTogJ1JFVklFVycsXG4gICAgbG93OiAnUEFTUycsXG4gICAgaW5mb3JtYXRpb25hbDogJ1BBU1MnLFxuICB9KTtcbiAgY29uc3QgW2Vudmlyb25tZW50LCBzZXRFbnZpcm9ubWVudF0gPSB1c2VTdGF0ZSgnc3RhZ2luZycpO1xuICBjb25zdCBbYWlFbmFibGVkLCBzZXRBaUVuYWJsZWRdID0gdXNlU3RhdGUodHJ1ZSk7XG5cbiAgdXNlRWZmZWN0KCgpID0+IHtcbiAgICBmZXRjaFNldHRpbmdzKCk7XG4gIH0sIFtdKTtcblxuICBjb25zdCBmZXRjaFNldHRpbmdzID0gYXN5bmMgKCkgPT4ge1xuICAgIHRyeSB7XG4gICAgICBzZXRMb2FkaW5nKHRydWUpO1xuICAgICAgY29uc3QgZGF0YSA9IGF3YWl0IGFwaS5nZXRTZXR0aW5ncygpO1xuICAgICAgc2V0U2V0dGluZ3MoZGF0YSk7XG4gICAgICBpZiAoZGF0YS5yZWxlYXNlX3BvbGljeSkgc2V0UG9saWN5KGRhdGEucmVsZWFzZV9wb2xpY3kpO1xuICAgICAgaWYgKGRhdGEuZW52aXJvbm1lbnQpIHNldEVudmlyb25tZW50KGRhdGEuZW52aXJvbm1lbnQpO1xuICAgICAgc2V0QWlFbmFibGVkKGRhdGEuYWlfYW5hbHlzaXNfZW5hYmxlZCk7XG4gICAgfSBjYXRjaCAoZXJyKSB7XG4gICAgICBjb25zb2xlLmVycm9yKCdGYWlsZWQgdG8gbG9hZCBzZXR0aW5nczonLCBlcnIpO1xuICAgIH0gZmluYWxseSB7XG4gICAgICBzZXRMb2FkaW5nKGZhbHNlKTtcbiAgICB9XG4gIH07XG5cbiAgY29uc3QgaGFuZGxlU2F2ZSA9IGFzeW5jIChlOiBSZWFjdC5Gb3JtRXZlbnQpID0+IHtcbiAgICBlLnByZXZlbnREZWZhdWx0KCk7XG4gICAgdHJ5IHtcbiAgICAgIHNldFNhdmluZyh0cnVlKTtcbiAgICAgIHNldFN1Y2Nlc3NNc2cobnVsbCk7XG4gICAgICBjb25zdCB1cGRhdGVkID0gYXdhaXQgYXBpLnVwZGF0ZVNldHRpbmdzKHtcbiAgICAgICAgcmVsZWFzZV9wb2xpY3k6IHBvbGljeSxcbiAgICAgICAgZW52aXJvbm1lbnQsXG4gICAgICAgIGFpX2FuYWx5c2lzX2VuYWJsZWQ6IGFpRW5hYmxlZCxcbiAgICAgIH0pO1xuICAgICAgc2V0U2V0dGluZ3ModXBkYXRlZCk7XG4gICAgICBzZXRTdWNjZXNzTXNnKCdSZWxlYXNlIGdhdGUgcG9saWN5IGFuZCBzZXR0aW5ncyBzYXZlZCBzdWNjZXNzZnVsbHkuJyk7XG4gICAgICBzZXRUaW1lb3V0KCgpID0+IHNldFN1Y2Nlc3NNc2cobnVsbCksIDQwMDApO1xuICAgIH0gY2F0Y2ggKGVycikge1xuICAgICAgYWxlcnQoYEZhaWxlZCB0byBzYXZlIHNldHRpbmdzOiAke2Vycn1gKTtcbiAgICB9IGZpbmFsbHkge1xuICAgICAgc2V0U2F2aW5nKGZhbHNlKTtcbiAgICB9XG4gIH07XG5cbiAgcmV0dXJuIChcbiAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktNiBtYXgtdy00eGwgbXgtYXV0byBzZWxlY3Qtbm9uZVwiPlxuICAgICAgey8qIEhlYWRlciAqL31cbiAgICAgIDxkaXY+XG4gICAgICAgIDxoMSBjbGFzc05hbWU9XCJ0ZXh0LXhsIHNtOnRleHQtMnhsIGZvbnQtYm9sZCB0ZXh0LXNsYXRlLTkwMCB0cmFja2luZy10aWdodFwiPlxuICAgICAgICAgIFNldHRpbmdzXG4gICAgICAgIDwvaDE+XG4gICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1zbGF0ZS01MDAgbXQtMC41XCI+XG4gICAgICAgICAgQ29uZmlndXJlIHJlbGVhc2UgZ2F0ZSBkZWNpc2lvbiBtYXRyaXgsIGVudmlyb25tZW50IHNldHRpbmdzLCBhbmQgQUkgcGFyYW1ldGVycy5cbiAgICAgICAgPC9wPlxuICAgICAgPC9kaXY+XG5cbiAgICAgIHtzdWNjZXNzTXNnICYmIChcbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTMuNSByb3VuZGVkLWxnIGJnLWVtZXJhbGQtNTAgYm9yZGVyIGJvcmRlci1lbWVyYWxkLTIwMCB0ZXh0LXhzIHRleHQtZW1lcmFsZC05MDAgZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTJcIj5cbiAgICAgICAgICA8Q2hlY2tDaXJjbGUyIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1lbWVyYWxkLTYwMCBmbGV4LXNocmluay0wXCIgLz5cbiAgICAgICAgICA8c3Bhbj57c3VjY2Vzc01zZ308L3NwYW4+XG4gICAgICAgIDwvZGl2PlxuICAgICAgKX1cblxuICAgICAge2xvYWRpbmcgfHwgIXNldHRpbmdzID8gKFxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInB5LTIwIHRleHQtY2VudGVyIHRleHQtc2xhdGUtNDAwIHRleHQteHNcIj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctNSBoLTUgYm9yZGVyLTIgYm9yZGVyLXNsYXRlLTkwMCBib3JkZXItdC10cmFuc3BhcmVudCByb3VuZGVkLWZ1bGwgYW5pbWF0ZS1zcGluIG14LWF1dG8gbWItMlwiIC8+XG4gICAgICAgICAgTG9hZGluZyBwbGF0Zm9ybSBjb25maWd1cmF0aW9uLi4uXG4gICAgICAgIDwvZGl2PlxuICAgICAgKSA6IChcbiAgICAgICAgPGZvcm0gb25TdWJtaXQ9e2hhbmRsZVNhdmV9IGNsYXNzTmFtZT1cInNwYWNlLXktNVwiPlxuICAgICAgICAgIHsvKiBSZWxlYXNlIEdhdGUgUG9saWN5IENhcmQgKi99XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTUgc206cC02IHJvdW5kZWQteGwgYmctd2hpdGUgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAvODAgc2hhZG93LVswXzFweF8ycHhfcmdiYSgwLDAsMCwwLjAyKV0gc3BhY2UteS00XCI+XG4gICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtOTAwIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XG4gICAgICAgICAgICAgICAgPFNoaWVsZENoZWNrIGNsYXNzTmFtZT1cInctNCBoLTQgdGV4dC1lbWVyYWxkLTYwMFwiIC8+XG4gICAgICAgICAgICAgICAgPHNwYW4+UmVsZWFzZSBnYXRlIGRlY2lzaW9uIG1hdHJpeDwvc3Bhbj5cbiAgICAgICAgICAgICAgPC9oMj5cbiAgICAgICAgICAgICAgPHAgY2xhc3NOYW1lPVwidGV4dC14cyB0ZXh0LXNsYXRlLTUwMCBtdC0wLjVcIj5cbiAgICAgICAgICAgICAgICBEZXRlcm1pbmUgYXV0b21hdGVkIGdhdGluZyB2ZXJkaWN0cyBmb3IgZmluZGluZ3MgaW4gZWFjaCBzZXZlcml0eSBjYXRlZ29yeS5cbiAgICAgICAgICAgICAgPC9wPlxuICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZ3JpZCBncmlkLWNvbHMtMSBzbTpncmlkLWNvbHMtMiBnYXAtMy41IHB0LTFcIj5cbiAgICAgICAgICAgICAgey8qIENyaXRpY2FsICovfVxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtMy41IHJvdW5kZWQtbGcgYmctc2xhdGUtNTAgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgc3BhY2UteS0xLjVcIj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxuICAgICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTgwMFwiPlxuICAgICAgICAgICAgICAgICAgICBDcml0aWNhbCBmaW5kaW5nc1xuICAgICAgICAgICAgICAgICAgPC9sYWJlbD5cbiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInctMiBoLTIgcm91bmRlZC1mdWxsIGJnLXJvc2UtNjAwXCIgLz5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8c2VsZWN0XG4gICAgICAgICAgICAgICAgICB2YWx1ZT17cG9saWN5LmNyaXRpY2FsfVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRQb2xpY3koeyAuLi5wb2xpY3ksIGNyaXRpY2FsOiBlLnRhcmdldC52YWx1ZSB9KX1cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBweC0zIHB5LTEuNSByb3VuZGVkLW1kIGJnLXdoaXRlIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHRleHQteHMgdGV4dC1zbGF0ZS05MDAgZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOmJvcmRlci1zbGF0ZS0zMDAgY3Vyc29yLXBvaW50ZXJcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJCTE9DS1wiPkJMT0NLIChTdHJpY3QgZGVmYXVsdCk8L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJSRVZJRVdcIj5SRVZJRVc8L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJQQVNTXCI+UEFTUzwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICB7LyogSGlnaCAqL31cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTMuNSByb3VuZGVkLWxnIGJnLXNsYXRlLTUwIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHNwYWNlLXktMS41XCI+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cbiAgICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtc2VtaWJvbGQgdGV4dC1zbGF0ZS04MDBcIj5cbiAgICAgICAgICAgICAgICAgICAgSGlnaCBmaW5kaW5nc1xuICAgICAgICAgICAgICAgICAgPC9sYWJlbD5cbiAgICAgICAgICAgICAgICAgIDxzcGFuIGNsYXNzTmFtZT1cInctMiBoLTIgcm91bmRlZC1mdWxsIGJnLW9yYW5nZS01MDBcIiAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDxzZWxlY3RcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXtwb2xpY3kuaGlnaH1cbiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0UG9saWN5KHsgLi4ucG9saWN5LCBoaWdoOiBlLnRhcmdldC52YWx1ZSB9KX1cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInctZnVsbCBweC0zIHB5LTEuNSByb3VuZGVkLW1kIGJnLXdoaXRlIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHRleHQteHMgdGV4dC1zbGF0ZS05MDAgZm9jdXM6b3V0bGluZS1ub25lIGZvY3VzOmJvcmRlci1zbGF0ZS0zMDAgY3Vyc29yLXBvaW50ZXJcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJCTE9DS1wiPkJMT0NLIChTdHJpY3QgZGVmYXVsdCk8L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJSRVZJRVdcIj5SRVZJRVc8L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJQQVNTXCI+UEFTUzwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICB7LyogTWVkaXVtICovfVxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtMy41IHJvdW5kZWQtbGcgYmctc2xhdGUtNTAgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgc3BhY2UteS0xLjVcIj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxuICAgICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTgwMFwiPlxuICAgICAgICAgICAgICAgICAgICBNZWRpdW0gZmluZGluZ3NcbiAgICAgICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ3LTIgaC0yIHJvdW5kZWQtZnVsbCBiZy1hbWJlci01MDBcIiAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDxzZWxlY3RcbiAgICAgICAgICAgICAgICAgIHZhbHVlPXtwb2xpY3kubWVkaXVtfVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRQb2xpY3koeyAuLi5wb2xpY3ksIG1lZGl1bTogZS50YXJnZXQudmFsdWUgfSl9XG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcHgtMyBweS0xLjUgcm91bmRlZC1tZCBiZy13aGl0ZSBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCB0ZXh0LXhzIHRleHQtc2xhdGUtOTAwIGZvY3VzOm91dGxpbmUtbm9uZSBmb2N1czpib3JkZXItc2xhdGUtMzAwIGN1cnNvci1wb2ludGVyXCJcbiAgICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiUkVWSUVXXCI+UkVWSUVXIChTdGFuZGFyZCBkZWZhdWx0KTwvb3B0aW9uPlxuICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cIkJMT0NLXCI+QkxPQ0s8L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJQQVNTXCI+UEFTUzwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICB7LyogTG93ICovfVxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtMy41IHJvdW5kZWQtbGcgYmctc2xhdGUtNTAgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgc3BhY2UteS0xLjVcIj5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlblwiPlxuICAgICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1zZW1pYm9sZCB0ZXh0LXNsYXRlLTgwMFwiPlxuICAgICAgICAgICAgICAgICAgICBMb3cgZmluZGluZ3NcbiAgICAgICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ3LTIgaC0yIHJvdW5kZWQtZnVsbCBiZy1za3ktNTAwXCIgLz5cbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgICA8c2VsZWN0XG4gICAgICAgICAgICAgICAgICB2YWx1ZT17cG9saWN5Lmxvd31cbiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0UG9saWN5KHsgLi4ucG9saWN5LCBsb3c6IGUudGFyZ2V0LnZhbHVlIH0pfVxuICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwidy1mdWxsIHB4LTMgcHktMS41IHJvdW5kZWQtbWQgYmctd2hpdGUgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAgdGV4dC14cyB0ZXh0LXNsYXRlLTkwMCBmb2N1czpvdXRsaW5lLW5vbmUgZm9jdXM6Ym9yZGVyLXNsYXRlLTMwMCBjdXJzb3ItcG9pbnRlclwiXG4gICAgICAgICAgICAgICAgPlxuICAgICAgICAgICAgICAgICAgPG9wdGlvbiB2YWx1ZT1cIlBBU1NcIj5QQVNTIChQZXJtaXNzaXZlIGRlZmF1bHQpPC9vcHRpb24+XG4gICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiUkVWSUVXXCI+UkVWSUVXPC9vcHRpb24+XG4gICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwiQkxPQ0tcIj5CTE9DSzwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgey8qIERldlNlY09wcyBUb29saW5nIFJ1bnRpbWUgKi99XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTUgc206cC02IHJvdW5kZWQteGwgYmctd2hpdGUgYm9yZGVyIGJvcmRlci1zbGF0ZS0yMDAvODAgc2hhZG93LVswXzFweF8ycHhfcmdiYSgwLDAsMCwwLjAyKV0gc3BhY2UteS00XCI+XG4gICAgICAgICAgICA8ZGl2PlxuICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtOTAwIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XG4gICAgICAgICAgICAgICAgPFNlcnZlciBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtZW1lcmFsZC02MDBcIiAvPlxuICAgICAgICAgICAgICAgIDxzcGFuPlNjYW5uZXIgYW5kIHBpcGVsaW5lIHJ1bnRpbWU8L3NwYW4+XG4gICAgICAgICAgICAgIDwvaDI+XG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1zbGF0ZS01MDAgbXQtMC41XCI+XG4gICAgICAgICAgICAgICAgSW50ZWdyYXRpb24gY29uZmlndXJhdGlvbiBmb3IgT1dBU1AgWkFQIGFuZCBDSS9DRCB3b3JrZmxvd3MuXG4gICAgICAgICAgICAgIDwvcD5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImdyaWQgZ3JpZC1jb2xzLTEgc206Z3JpZC1jb2xzLTIgZ2FwLTMuNVwiPlxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMVwiPlxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtbWVkaXVtIHRleHQtc2xhdGUtNzAwXCI+XG4gICAgICAgICAgICAgICAgICBUYXJnZXQgZGVwbG95bWVudCBlbnZpcm9ubWVudFxuICAgICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgICAgPHNlbGVjdFxuICAgICAgICAgICAgICAgICAgdmFsdWU9e2Vudmlyb25tZW50fVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRFbnZpcm9ubWVudChlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcHgtMyBweS0xLjUgcm91bmRlZC1tZCBiZy1zbGF0ZS01MCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCB0ZXh0LXhzIHRleHQtc2xhdGUtOTAwIGZvY3VzOm91dGxpbmUtbm9uZSBmb2N1czpib3JkZXItc2xhdGUtMzAwIGNhcGl0YWxpemUgY3Vyc29yLXBvaW50ZXJcIlxuICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJkZXZlbG9wbWVudFwiPkRldmVsb3BtZW50PC9vcHRpb24+XG4gICAgICAgICAgICAgICAgICA8b3B0aW9uIHZhbHVlPVwic3RhZ2luZ1wiPlN0YWdpbmc8L29wdGlvbj5cbiAgICAgICAgICAgICAgICAgIDxvcHRpb24gdmFsdWU9XCJwcm9kdWN0aW9uXCI+UHJvZHVjdGlvbjwvb3B0aW9uPlxuICAgICAgICAgICAgICAgIDwvc2VsZWN0PlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMVwiPlxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtbWVkaXVtIHRleHQtc2xhdGUtNzAwXCI+XG4gICAgICAgICAgICAgICAgICBQcmltYXJ5IGR5bmFtaWMgc2Nhbm5lclxuICAgICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJweC0zIHB5LTEuNSByb3VuZGVkLW1kIGJnLXNsYXRlLTUwIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHRleHQteHMgdGV4dC1zbGF0ZS03MDBcIj5cbiAgICAgICAgICAgICAgICAgIE9XQVNQIFpBUCAyLjE0LjAgKEJhc2VsaW5lICYgQWN0aXZlIERBU1QpXG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0xXCI+XG4gICAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1tZWRpdW0gdGV4dC1zbGF0ZS03MDBcIj5cbiAgICAgICAgICAgICAgICAgIENJL0NEIHBpcGVsaW5lIGJpbmRpbmdcbiAgICAgICAgICAgICAgICA8L2xhYmVsPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicHgtMyBweS0xLjUgcm91bmRlZC1tZCBiZy1zbGF0ZS01MCBib3JkZXIgYm9yZGVyLXNsYXRlLTIwMCB0ZXh0LXhzIHRleHQtc2xhdGUtNzAwXCI+XG4gICAgICAgICAgICAgICAgICBHaXRIdWIgQWN0aW9ucyAoLmdpdGh1Yi93b3JrZmxvd3Mvc2VjdXJpdHkueW1sKVxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInNwYWNlLXktMVwiPlxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtbWVkaXVtIHRleHQtc2xhdGUtNzAwXCI+XG4gICAgICAgICAgICAgICAgICBMb2NhbCB0ZXN0IHRhcmdldFxuICAgICAgICAgICAgICAgIDwvbGFiZWw+XG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJweC0zIHB5LTEuNSByb3VuZGVkLW1kIGJnLXNsYXRlLTUwIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIHRleHQteHMgdGV4dC1zbGF0ZS03MDBcIj5cbiAgICAgICAgICAgICAgICAgIE9XQVNQIEp1aWNlIFNob3AgKHBvcnQgMzAwMClcbiAgICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8L2Rpdj5cblxuICAgICAgICAgIHsvKiBBSSBBZHZpc29yIFNldHRpbmdzICovfVxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC01IHNtOnAtNiByb3VuZGVkLXhsIGJnLXdoaXRlIGJvcmRlciBib3JkZXItc2xhdGUtMjAwLzgwIHNoYWRvdy1bMF8xcHhfMnB4X3JnYmEoMCwwLDAsMC4wMildIHNwYWNlLXktNFwiPlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cbiAgICAgICAgICAgICAgPGRpdj5cbiAgICAgICAgICAgICAgICA8aDIgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LXNlbWlib2xkIHRleHQtc2xhdGUtOTAwIGZsZXggaXRlbXMtY2VudGVyIGdhcC0yXCI+XG4gICAgICAgICAgICAgICAgICA8U3BhcmtsZXMgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWVtZXJhbGQtNjAwXCIgLz5cbiAgICAgICAgICAgICAgICAgIDxzcGFuPkFJIHNlY3VyaXR5IGFzc2lzdGFudCBsYXllcjwvc3Bhbj5cbiAgICAgICAgICAgICAgICA8L2gyPlxuICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1zbGF0ZS01MDAgbXQtMC41XCI+XG4gICAgICAgICAgICAgICAgICBHZW5lcmF0ZXMgcGxhaW4tRW5nbGlzaCB2dWxuZXJhYmlsaXR5IGV4cGxhbmF0aW9ucyBhbmQgZGV2ZWxvcGVyIGZpeCBpdGVtcy5cbiAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJyZWxhdGl2ZSBpbmxpbmUtZmxleCBpdGVtcy1jZW50ZXIgY3Vyc29yLXBvaW50ZXJcIj5cbiAgICAgICAgICAgICAgICA8aW5wdXRcbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJjaGVja2JveFwiXG4gICAgICAgICAgICAgICAgICBjaGVja2VkPXthaUVuYWJsZWR9XG4gICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEFpRW5hYmxlZChlLnRhcmdldC5jaGVja2VkKX1cbiAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cInNyLW9ubHkgcGVlclwiXG4gICAgICAgICAgICAgICAgLz5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInctMTAgaC01IGJnLXNsYXRlLTIwMCBwZWVyLWZvY3VzOm91dGxpbmUtbm9uZSByb3VuZGVkLWZ1bGwgcGVlciBwZWVyLWNoZWNrZWQ6YWZ0ZXI6dHJhbnNsYXRlLXgtZnVsbCBwZWVyLWNoZWNrZWQ6YWZ0ZXI6Ym9yZGVyLXdoaXRlIGFmdGVyOmNvbnRlbnQtWycnXSBhZnRlcjphYnNvbHV0ZSBhZnRlcjp0b3AtWzJweF0gYWZ0ZXI6bGVmdC1bMnB4XSBhZnRlcjpiZy13aGl0ZSBhZnRlcjpib3JkZXItc2xhdGUtMzAwIGFmdGVyOmJvcmRlciBhZnRlcjpyb3VuZGVkLWZ1bGwgYWZ0ZXI6aC00IGFmdGVyOnctNCBhZnRlcjp0cmFuc2l0aW9uLWFsbCBwZWVyLWNoZWNrZWQ6YmctZW1lcmFsZC02MDBcIj48L2Rpdj5cbiAgICAgICAgICAgICAgPC9sYWJlbD5cbiAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtMyByb3VuZGVkLWxnIGJnLXNsYXRlLTUwIGJvcmRlciBib3JkZXItc2xhdGUtMjAwIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiB0ZXh0LXhzXCI+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgZ2FwLTIgdGV4dC1zbGF0ZS02MDBcIj5cbiAgICAgICAgICAgICAgICA8S2V5IGNsYXNzTmFtZT1cInctMy41IGgtMy41IHRleHQtc2xhdGUtNDAwXCIgLz5cbiAgICAgICAgICAgICAgICA8c3Bhbj5PcGVuQUkgQVBJIGludGVncmF0aW9uOjwvc3Bhbj5cbiAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDxzcGFuXG4gICAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgcHgtMiBweS0wLjUgcm91bmRlZCB0ZXh0LVsxMXB4XSBmb250LW1lZGl1bSAke1xuICAgICAgICAgICAgICAgICAgc2V0dGluZ3MuYWlfYXBpX2tleV9jb25maWd1cmVkXG4gICAgICAgICAgICAgICAgICAgID8gJ2JnLWVtZXJhbGQtNTAgdGV4dC1lbWVyYWxkLTcwMCBib3JkZXIgYm9yZGVyLWVtZXJhbGQtMjAwJ1xuICAgICAgICAgICAgICAgICAgICA6ICdiZy1zbGF0ZS0xMDAgdGV4dC1zbGF0ZS02MDAnXG4gICAgICAgICAgICAgICAgfWB9XG4gICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICB7c2V0dGluZ3MuYWlfYXBpX2tleV9jb25maWd1cmVkXG4gICAgICAgICAgICAgICAgICA/ICdDb25maWd1cmVkIChBY3RpdmUpJ1xuICAgICAgICAgICAgICAgICAgOiAnQnVpbHQtaW4gbG9jYWwgc2VjdXJpdHkgbW9kZWxzJ31cbiAgICAgICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICB7LyogU2F2ZSBBY3Rpb24gKi99XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGp1c3RpZnktZW5kIHB0LTFcIj5cbiAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgdHlwZT1cInN1Ym1pdFwiXG4gICAgICAgICAgICAgIGRpc2FibGVkPXtzYXZpbmd9XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT1cInB4LTQgcHktMiByb3VuZGVkLWxnIGJnLXNsYXRlLTkwMCBob3ZlcjpiZy1zbGF0ZS04MDAgdGV4dC13aGl0ZSB0ZXh0LXhzIGZvbnQtbWVkaXVtIGZsZXggaXRlbXMtY2VudGVyIGdhcC0xLjUgY3Vyc29yLXBvaW50ZXIgZGlzYWJsZWQ6b3BhY2l0eS01MCB0cmFuc2l0aW9uLWNvbG9ycyBzaGFkb3cteHNcIlxuICAgICAgICAgICAgPlxuICAgICAgICAgICAgICA8U2F2ZSBjbGFzc05hbWU9XCJ3LTMuNSBoLTMuNVwiIC8+XG4gICAgICAgICAgICAgIDxzcGFuPntzYXZpbmcgPyAnU2F2aW5nLi4uJyA6ICdTYXZlIHNldHRpbmdzJ308L3NwYW4+XG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgPC9mb3JtPlxuICAgICAgKX1cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG4iXSwiZmlsZSI6IkM6L1VzZXJzL3B1cnUvLmdlbWluaS9hbnRpZ3Jhdml0eS9zY3JhdGNoL3NlY3VyZWdhdGUvZnJvbnRlbmQvc3JjL3BhZ2VzL1NldHRpbmdzUGFnZS50c3gifQ==

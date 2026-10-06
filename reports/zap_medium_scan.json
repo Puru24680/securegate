@@ -1,0 +1,47 @@
+{
+  "@version": "2.14.0",
+  "@generated": "2024-10-06T12:00:00Z",
+  "site": [
+    {
+      "@name": "http://localhost:3000",
+      "alerts": [
+        {
+          "pluginId": "10020",
+          "alertRef": "10020-1",
+          "alert": "Missing Anti-clickjacking Header",
+          "name": "Missing Anti-clickjacking Header",
+          "riskcode": "2",
+          "confidence": "3",
+          "riskdesc": "Medium (High)",
+          "desc": "X-Frame-Options or Content-Security-Policy frame-ancestors missing.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/#/search",
+              "method": "GET"
+            }
+          ],
+          "solution": "Add X-Frame-Options: DENY header.",
+          "cweid": "1021"
+        },
+        {
+          "pluginId": "10202",
+          "alertRef": "10202-1",
+          "alert": "Absence of Anti-CSRF Tokens",
+          "name": "Absence of Anti-CSRF Tokens",
+          "riskcode": "2",
+          "confidence": "2",
+          "riskdesc": "Medium (Medium)",
+          "desc": "No anti-CSRF token on form submission.",
+          "instances": [
+            {
+              "uri": "http://localhost:3000/contact",
+              "method": "POST"
+            }
+          ],
+          "solution": "Generate random per-session CSRF token.",
+          "cweid": "352"
+        }
+      ]
+    }
+  ]
+}
