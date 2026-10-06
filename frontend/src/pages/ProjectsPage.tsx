@@ -23,7 +23,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
 }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState('');
-  const [targetUrl, setTargetUrl] = useState('https://jewellery-events-div-classification.trycloudflare.com');
+  const [targetUrl, setTargetUrl] = useState('http://localhost:3000');
   const [description, setDescription] = useState('');
   const [creating, setCreating] = useState(false);
 
@@ -173,7 +173,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({
                   required
                   value={targetUrl}
                   onChange={(e) => setTargetUrl(e.target.value)}
-                  placeholder="https://jewellery-events-div-classification.trycloudflare.com"
+                  placeholder="http://localhost:3000"
                   className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 focus:bg-white transition-colors"
                 />
               </div>

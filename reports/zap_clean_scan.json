@@ -3,7 +3,7 @@
   "@generated": "2024-10-06T12:00:00Z",
   "site": [
     {
-      "@name": "https://jewellery-events-div-classification.trycloudflare.com",
+      "@name": "http://localhost:3000",
       "alerts": [
         {
           "pluginId": "10049",
@@ -16,7 +16,7 @@
           "desc": "Cache-Control header is present.",
           "instances": [
             {
-              "uri": "https://jewellery-events-div-classification.trycloudflare.com/assets/logo.png",
+              "uri": "http://localhost:3000/assets/logo.png",
               "method": "GET"
             }
           ],

@@ -174,7 +174,7 @@ def simulate_preset():
         scan = scan_service.process_zap_report(
             project_id=project_id,
             raw_report_data=raw_data,
-            target_url="https://jewellery-events-div-classification.trycloudflare.com" if preset == "juiceshop" else "https://staging.internal.secgate.io",
+            target_url="http://localhost:3000" if preset == "juiceshop" else "https://staging.internal.secgate.io",
             scan_identifier=identifier
         )
         return jsonify({
