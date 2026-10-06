@@ -1,0 +1,310 @@
+================================================================================
+SECUREGATE: PRE-RELEASE APPLICATION SECURITY GATE
+Comprehensive System Overview, Architecture, Data Flow, and Demo Guide
+================================================================================
+
+PROJECT: SecureGate
+PROBLEM STATEMENT: "Nothing Ships Until It's Scanned"
+TARGET APPLICATION: OWASP Juice Shop (http://localhost:3000)
+DEPLOYED URL: https://frontend-alpha-pearl-65.vercel.app
+REPOSITORY: https://github.com/Puru24680/securegate
+
+--------------------------------------------------------------------------------
+1. THE CORE PROBLEM & MISSION
+--------------------------------------------------------------------------------
+In modern software delivery, automated CI/CD pipelines often push code directly
+to production without validating runtime security. When security scanning is
+performed, results typically arrive as unmanageable 100+ page XML/JSON reports
+that release managers cannot parse and developers frequently ignore.
+
+SecureGate acts as a deterministic Pre-Release Security Gate. It sits between
+dynamic application security scanning (OWASP ZAP) and production release
+promotion.
+
+SecureGate's mandate:
+  1. Ingest raw DAST scan reports directly from OWASP ZAP.
+  2. Normalize findings to industry standards (OWASP Top 10 2021 & CWE).
+  3. Enforce an automated, deterministic release gate policy:
+       - CRITICAL      --> BLOCK
+       - HIGH          --> BLOCK
+       - MEDIUM        --> REVIEW (Manual security sign-off required)
+       - LOW           --> PASS
+       - INFORMATIONAL --> PASS
+  4. Compute an explainable, secondary Security Posture Score (0 - 100).
+  5. Provide developers with immediate evidence, attack parameters, and
+     remediation blueprints.
+
+
+--------------------------------------------------------------------------------
+2. END-TO-END PIPELINE & ARCHITECTURE
+--------------------------------------------------------------------------------
+
+  +-------------------------------+
+  |  Target App: OWASP Juice Shop | (http://localhost:3000)
+  +---------------+---------------+
+                  |
+                  | [Spider & Active Attack Scan]
+                  v
+  +-------------------------------+
+  |    DAST Scanner: OWASP ZAP    | (v2.14.0 Baseline / Full Scan)
+  +---------------+---------------+
+                  |
+                  | [JSON Scan Artifact Export]
+                  v
+  +-------------------------------+
+  |   SecureGate Ingestion Engine |
+  |   - backend/app/parsers/      | -> zap_parser.py
+  |   - backend/app/security/     | -> severity_engine.py
+  +---------------+---------------+
+                  |
+                  | [Normalized Findings + Gate Policy Determination]
+                  v
+  +-------------------------------+
+  |   Authoritative SQLite DB     |
+  |   - Projects, Scans, Findings | -> 1:1 Mapping to Candidate Release
+  |   - Release Records & Policy  |
+  +---------------+---------------+
+                  |
+                  | [Flask RESTful API Layer]
+                  v
+  +-------------------------------+
+  |   React / Vite Web Dashboard  |
+  |   - Pre-Release Gate Hero     | -> Prominent PASS / BLOCK banner
+  |   - Release Gate Policy Card  | -> Configured enforcement rules
+  |   - 5-Severity Metric Cards   | -> Critical, High, Med, Low, Info
+  |   - Finding Detail Inspector  | -> Evidence copy, CWE, OWASP, fix
+  |   - Security Analysis Assist  | -> Active scan context assistant
+  +-------------------------------+
+
+
+--------------------------------------------------------------------------------
+3. DATA NORMALIZATION & POLICY ENGINE
+--------------------------------------------------------------------------------
+
+A. DAST Scanner Ingestion (backend/app/parsers/zap_parser.py):
+   ZAP reports alerts with a numerical 'riskcode':
+     - riskcode "4" --> Critical
+     - riskcode "3" --> High
+     - riskcode "2" --> Medium
+     - riskcode "1" --> Low
+     - riskcode "0" --> Informational
+
+   * CRITICAL FIX IMPLEMENTED:
+     Informational findings (riskcode 0) are NEVER converted to Low findings.
+     They are strictly preserved as Informational across all counters,
+     breakdown bars, metrics, and report exports.
+
+B. Deterministic Gate Evaluation (backend/app/security/severity_engine.py):
+   The release gate policy is applied deterministically:
+     - If count(Critical) > 0 OR count(High) > 0:
+         STATUS = "BLOCK"
+         REASON = "Release blocked due to: X Critical, Y High. Critical/High
+                   findings violate the release policy."
+     - Else if count(Medium) > 0:
+         STATUS = "REVIEW"
+         REASON = "Release requires review due to: X Medium. Medium severity
+                   findings require security sign-off."
+     - Else:
+         STATUS = "PASS"
+         REASON = "Release passed. No High or Critical vulnerabilities were
+                   detected. The release can proceed."
+
+C. Secondary Security Score Engine:
+   The security score is explainable and deterministic:
+     Base score: 100 points
+     - Critical Finding:      -40 points per finding
+     - High Finding:          -25 points per finding
+     - Medium Finding:        -10 points per finding
+     - Low Finding:           -3 points per finding
+     - Informational Finding:  0 points (Zero deduction)
+     Bounded between 0 and 100.
+
+   IMPORTANT: The security score is strictly SECONDARY. A scan scoring 85/100
+   that contains even one High finding is still unconditionally BLOCKED.
+
+
+--------------------------------------------------------------------------------
+4. SINGLE AUTHORITATIVE ACTIVE SCAN MODEL
+--------------------------------------------------------------------------------
+In earlier builds, a data inconsistency existed where the dashboard could show
+PASS while the AI widget claimed multiple High findings existed.
+
+This has been completely solved:
+  - The entire application (Dashboard, Findings, Releases, Reports, and the
+    Security Analysis Assistant) derives from a SINGLE active scan context
+    (active_scan_id).
+  - When you import a scan, click a preset, or click "Set as Active" in the
+    Scans page, that scan ID becomes the universal context.
+  - The Assistant inspects the active scan object in real-time and computes its
+    summary from live severity counts and gate determinations. No hardcoded
+    assumptions exist anywhere.
+
+
+--------------------------------------------------------------------------------
+5. THE THREE CORE DEMO SCENARIOS
+--------------------------------------------------------------------------------
+
+SecureGate features 3 built-in one-click demo scenarios:
+
+1. JUICE SHOP SCAN (The Strong BLOCK Demo)
+   - Source: reports/zap_juiceshop_scan.json
+   - Target: http://localhost:3000
+   - Findings Breakdown (8 total):
+       * 1 Critical: Remote Code Execution (Template Injection) [CWE-94]
+       * 2 High:     SQL Injection [CWE-89], Reflected XSS [CWE-79]
+       * 2 Medium:   Missing Anti-clickjacking [CWE-1021], Missing CSRF [CWE-352]
+       * 2 Low:      Cookie No HttpOnly [CWE-1004], Server Leaks Info [CWE-200]
+       * 1 Info:     Re-examine Cache-Control Directives [CWE-525]
+   - Gate Decision:  BLOCK
+   - Security Score: 44.7 / 100
+   - Gate Reason:    "Release blocked due to: 1 Critical, 2 High. Critical/High
+                      findings violate the release policy."
+
+2. STAGING BUILD SCAN (The REVIEW Demo)
+   - Source: reports/zap_medium_scan.json
+   - Findings Breakdown (2 total):
+       * 2 Medium:   Anti-clickjacking Header, Anti-CSRF Token Missing
+   - Gate Decision:  REVIEW
+   - Security Score: 80.0 / 100
+   - Gate Reason:    "Release requires review due to: 2 Medium. Medium severity
+                      findings require security sign-off."
+
+3. HARDENED BUILD SCAN (The Clean PASS Demo)
+   - Source: reports/zap_clean_scan.json
+   - Findings Breakdown (1 total):
+       * 1 Info:     Content-Cache Directives (Static assets caching valid)
+   - Gate Decision:  PASS
+   - Security Score: 100.0 / 100
+   - Gate Reason:    "Release passed. No High or Critical vulnerabilities were
+                      detected. The release can proceed."
+
+
+--------------------------------------------------------------------------------
+6. KEY UI & USER EXPERIENCE FEATURES
+--------------------------------------------------------------------------------
+
+A. Hero Banner ("PRE-RELEASE SECURITY GATE"):
+   - Displays massive, bold status text: PASS / BLOCK / REVIEW.
+   - Shows severity pill badges with exact counts.
+   - States the exact gating reason and next recommended action.
+   - Includes quick-action buttons to view findings or release history.
+
+B. Release Gate Policy Card:
+   - Compact table displayed directly on the dashboard:
+       Critical      --> BLOCK
+       High          --> BLOCK
+       Medium        --> REVIEW
+       Low           --> PASS
+       Informational --> PASS
+   - Explicit rule: "Release is blocked if any Critical or High severity
+     vulnerability is detected."
+
+C. Five Distinct Severity Metrics:
+   - 6 responsive cards across the top:
+       [Critical] [High] [Medium] [Low] [Informational] [Security Score]
+   - Each card lists counts and threshold expectations.
+
+D. Finding Detail Modal (Deep Inspector):
+   - Header with severity badge, confidence rating, CWE, and OWASP category.
+   - Bold Gate Impact banner (e.g., "Gate impact: BLOCK — High severity
+     finding violates release gate policy").
+   - HTTP method and vulnerable endpoint URL.
+   - Raw scanner attack payload and evidence with a 1-click "Copy evidence"
+     button.
+   - Clear remediation steps and external OWASP cheat sheet references.
+
+E. Security Analysis Assistant:
+   - Replaced static strings with dynamic active-scan analysis.
+   - "Summarize active scan": outputs an instant policy compliance briefing.
+   - "Explain top finding": details business impact, technical vectors, and
+     exploitability.
+   - "Remediation guidance": outputs an actionable checklist for developers.
+
+F. Scans & Releases Audit Trail:
+   - Scans Page: History of all scan executions with 5-severity breakdown,
+     active scan badge, and a "Set as Active" context button.
+   - Releases Page: Historical record of gate determinations
+     (v1.0.0 PASS, v1.1.0 REVIEW, v1.2.0 BLOCK) using precise "Release gate
+     decision" terminology.
+
+
+--------------------------------------------------------------------------------
+7. HACKATHON PITCH SCRIPT / DEMO WALKTHROUGH (2 MINUTES)
+--------------------------------------------------------------------------------
+
+Follow this script during the live presentation or video demo:
+
+[0:00 - 0:25] THE HOOK & PROBLEM STATEMENT
+  - "Judges, modern CI/CD tools push code automatically, but testing web
+     applications for dynamic runtime vulnerabilities is still disconnected
+     from the release process. Our project, SecureGate, solves Challenge #23:
+     'Nothing Ships Until It's Scanned'."
+
+[0:25 - 0:50] THE BLOCK STATE (Vulnerable Juice Shop)
+  - Show the Dashboard: Point to the large red 'BLOCK' banner.
+  - "Here, we ran OWASP ZAP against a live instance of OWASP Juice Shop on port
+     3000. SecureGate ingested the scan artifact, normalized 8 findings, and
+     immediately triggered a BLOCK.
+     Why? Because 1 Critical and 2 High findings violate our Release Gate
+     Policy, which you can see right here on the policy card: zero Critical
+     and zero High findings are permitted to ship."
+
+[0:50 - 1:15] DEEP FINDING INSPECTION & ASSISTANT
+  - Click on 'SQL Injection' in Top Findings.
+  - "A developer clicking this sees the exact attack payload, the database
+     evidence, the CWE and OWASP Top 10 mapping, and a 1-click copy button
+     for repro. Notice the banner: 'Gate impact: BLOCK'.
+  - Close the modal and click 'Summarize active scan' on the Security Analysis
+     Assistant:
+  - "Our assistant dynamically reads the active scan state and provides an
+     instant compliance briefing."
+
+[1:15 - 1:40] THE PASS STATE (Instant Transition)
+  - Click 'Hardened build' in the top presets (or click Import Scan).
+  - Watch the dashboard immediately transition to a bright green 'PASS' banner.
+  - "Now, the development team has remediated the injection flaws. SecureGate
+     re-evaluates the scan: 0 Critical, 0 High, score 100/100, and the release
+     gate status changes to PASS: 'Ready for release'."
+
+[1:40 - 2:00] AUDIT TRAIL & CONCLUSION
+  - Navigate to the 'Releases' tab.
+  - "Finally, every single gating decision is permanently audited with its
+     full severity breakdown and justification, creating a verifiable record of
+     software supply chain security.
+     With SecureGate, nothing ships until it's scanned."
+
+
+--------------------------------------------------------------------------------
+8. QUICK-START INSTRUCTIONS FOR THE TEAM
+--------------------------------------------------------------------------------
+
+PREREQUISITES:
+  - Python 3.10+
+  - Node.js 18+
+
+1. START THE BACKEND:
+   cd backend
+   python -m venv venv
+   # On Windows: venv\Scripts\activate
+   # On macOS/Linux: source venv/bin/activate
+   pip install -r requirements.txt
+   python run.py
+   --> Backend runs at: http://localhost:5000
+
+2. START THE FRONTEND:
+   cd frontend
+   npm install
+   npm run dev
+   --> Frontend runs at: http://localhost:5173
+
+3. (OPTIONAL) RUN LOCAL JUICE SHOP:
+   docker run --rm -p 3000:3000 bkimminich/juice-shop
+   --> Accessible at: http://localhost:3000
+
+4. RUN AUTOMATED TEST SUITE:
+   $env:PYTHONPATH="backend"; python -m pytest backend/tests
+   --> 29 / 29 tests pass (100% coverage of parsers, engine, endpoints, and gate).
+
+================================================================================
+END OF OVERVIEW DOCUMENT
+================================================================================
