@@ -3,9 +3,9 @@
   "@generated": "2024-10-06T12:00:00Z",
   "site": [
     {
-      "@name": "http://localhost:3000",
-      "@host": "localhost",
-      "@port": "3000",
+      "@name": "https://demo.owasp-juice.shop",
+      "@host": "demo.owasp-juice.shop",
+      "@port": "443",
       "@ssl": "false",
       "alerts": [
         {
@@ -19,7 +19,7 @@
           "desc": "SQL injection may be possible. The user-supplied input in the search query parameter is directly concatenated into a dynamic SQLite command without parameterized sanitization. An attacker can manipulate backend queries, extract user password hashes, or bypass authentication.",
           "instances": [
             {
-              "uri": "http://localhost:3000/rest/products/search?q=apple%27%29%29+UNION+SELECT+1%2Cid%2Cemail%2Cpassword%2C4%2C5%2C6%2C7%2C8%2C9+FROM+Users--",
+              "uri": "https://demo.owasp-juice.shop/rest/products/search?q=apple%27%29%29+UNION+SELECT+1%2Cid%2Cemail%2Cpassword%2C4%2C5%2C6%2C7%2C8%2C9+FROM+Users--",
               "method": "GET",
               "param": "q",
               "attack": "apple')) UNION SELECT 1,id,email,password,4,5,6,7,8,9 FROM Users--",
@@ -42,7 +42,7 @@
           "desc": "A reflected cross-site scripting (XSS) vulnerability was identified in the feedback submission endpoint. Malicious JavaScript injected via the comment parameter is echoed verbatim into the client DOM without HTML entity encoding.",
           "instances": [
             {
-              "uri": "http://localhost:3000/api/Feedbacks",
+              "uri": "https://demo.owasp-juice.shop/api/Feedbacks",
               "method": "POST",
               "param": "comment",
               "attack": "<iframe src=\"javascript:alert('XSS')\">",
@@ -65,7 +65,7 @@
           "desc": "No Anti-CSRF tokens were found in the state-changing HTML submission forms. Attackers can forge cross-origin POST requests on behalf of authenticated users.",
           "instances": [
             {
-              "uri": "http://localhost:3000/profile",
+              "uri": "https://demo.owasp-juice.shop/profile",
               "method": "POST",
               "param": "username",
               "evidence": "<form action=\"/profile\" method=\"POST\">"
@@ -87,7 +87,7 @@
           "desc": "The HTTP response does not include the X-Frame-Options or Content-Security-Policy frame-ancestors header. The application can be framed in malicious third-party websites.",
           "instances": [
             {
-              "uri": "http://localhost:3000/#/login",
+              "uri": "https://demo.owasp-juice.shop/#/login",
               "method": "GET",
               "evidence": "X-Frame-Options header missing"
             }
@@ -108,7 +108,7 @@
           "desc": "A cookie has been set without the HttpOnly attribute. This permits client-side JavaScript scripts to access the cookie value, increasing risk of credential exfiltration via XSS.",
           "instances": [
             {
-              "uri": "http://localhost:3000/rest/user/authentication-details",
+              "uri": "https://demo.owasp-juice.shop/rest/user/authentication-details",
               "method": "GET",
               "param": "token",
               "evidence": "Set-Cookie: token=eyJhbGci...; Path=/; Secure"
@@ -130,7 +130,7 @@
           "desc": "The web server response reveals internal runtime details via the 'X-Powered-By: Express' header. This assists threat actors in fingerprinting specific software versions.",
           "instances": [
             {
-              "uri": "http://localhost:3000/",
+              "uri": "https://demo.owasp-juice.shop/",
               "method": "GET",
               "evidence": "X-Powered-By: Express"
             }

@@ -31,7 +31,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number>(
     activeProjectId || (projects[0]?.id ?? 1)
   );
-  const [targetUrl, setTargetUrl] = useState('http://localhost:3000');
+  const [targetUrl, setTargetUrl] = useState('https://demo.owasp-juice.shop');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,7 +78,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
         presetReport = {
           "@version": "2.14.0",
           "site": [{
-            "@name": targetUrl || "http://localhost:3000",
+            "@name": targetUrl || "https://demo.owasp-juice.shop",
             "alerts": [
               {
                 "pluginId": "40018",
@@ -137,7 +137,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
         presetReport = {
           "@version": "2.14.0",
           "site": [{
-            "@name": targetUrl || "http://localhost:3000",
+            "@name": targetUrl || "https://demo.owasp-juice.shop",
             "alerts": [
               {
                 "pluginId": "10020",
@@ -169,7 +169,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
         presetReport = {
           "@version": "2.14.0",
           "site": [{
-            "@name": targetUrl || "http://localhost:3000",
+            "@name": targetUrl || "https://demo.owasp-juice.shop",
             "alerts": [
               {
                 "pluginId": "10049",
@@ -263,7 +263,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
                 type="text"
                 value={targetUrl}
                 onChange={(e) => setTargetUrl(e.target.value)}
-                placeholder="http://localhost:3000"
+                placeholder="https://demo.owasp-juice.shop"
                 className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:outline-none focus:border-slate-300 focus:bg-white transition-colors"
               />
             </div>

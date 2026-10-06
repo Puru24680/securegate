@@ -39,3 +39,6 @@ edgetemp*
 
 # Vercel artifacts
 .vercel/
+
+.vercel
+.env*

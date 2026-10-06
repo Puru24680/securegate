@@ -3,7 +3,7 @@
   "@generated": "2024-10-06T12:00:00Z",
   "site": [
     {
-      "@name": "http://localhost:3000",
+      "@name": "https://demo.owasp-juice.shop",
       "alerts": [
         {
           "pluginId": "10049",
@@ -16,7 +16,7 @@
           "desc": "Cache-Control header is present.",
           "instances": [
             {
-              "uri": "http://localhost:3000/assets/logo.png",
+              "uri": "https://demo.owasp-juice.shop/assets/logo.png",
               "method": "GET"
             }
           ],

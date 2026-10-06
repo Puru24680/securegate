@@ -174,7 +174,7 @@ def simulate_preset():
         scan = scan_service.process_zap_report(
             project_id=project_id,
             raw_report_data=raw_data,
-            target_url="http://localhost:3000 (Juice Shop)" if preset == "juiceshop" else "http://staging.internal:8080",
+            target_url="https://demo.owasp-juice.shop" if preset == "juiceshop" else "https://staging.internal.secgate.io",
             scan_identifier=identifier
         )
         return jsonify({

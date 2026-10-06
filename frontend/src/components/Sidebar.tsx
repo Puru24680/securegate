@@ -56,17 +56,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Quiet Project Indicator */}
         <div className="px-4 pb-2">
-          <div className="px-3 py-2 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-between">
-            <div className="min-w-0">
-              <div className="text-xs font-medium text-slate-800 truncate">
-                OWASP Juice Shop
+          <a
+            href="https://demo.owasp-juice.shop"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3 py-2 rounded-lg bg-slate-50 hover:bg-slate-100/90 border border-slate-200/80 flex items-center justify-between transition-colors group cursor-pointer block"
+            title="Open live OWASP Juice Shop instance in new tab"
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="min-w-0 pr-2">
+                <div className="text-xs font-semibold text-slate-800 truncate group-hover:text-emerald-700 transition-colors">
+                  OWASP Juice Shop
+                </div>
+                <div className="text-[11px] text-slate-500 truncate font-mono">
+                  demo.owasp-juice.shop
+                </div>
               </div>
-              <div className="text-[11px] text-slate-500 truncate">
-                localhost:3000
-              </div>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active Cloud Target" />
             </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" title="Active Target" />
-          </div>
+          </a>
         </div>
 
         {/* Navigation */}
