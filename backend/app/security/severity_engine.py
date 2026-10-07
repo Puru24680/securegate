@@ -45,9 +45,81 @@ def normalize_severity(raw_severity: str) -> str:
     return mapping.get(s, 'Low')
 
 
+def calculate_contextual_risk_score(
+    severity: str,
+    confidence: str = 'Medium',
+    cvss_score: float = 0.0,
+    asset_criticality: str = 'Medium',
+    environment: str = 'Development',
+    recurrence_count: int = 1
+) -> tuple[float, str, str]:
+    """
+    Deterministic multi-factor risk engine:
+    Evaluates:
+      - Canonical Severity (Base weight)
+      - CVSS Score (blends with severity if > 0)
+      - Scanner Confidence
+      - Asset Criticality (Impact multiplier)
+      - Deployment Environment (Production > Staging > Development)
+      - Recurrence (Age/recurrence penalty)
+    Returns:
+      (risk_score: 0.0 - 100.0, priority: str, recommended_action: str)
+    """
+    canonical_sev = normalize_severity(severity)
+    base = SEVERITY_SCORES.get(canonical_sev, 20)
+
+    if cvss_score and cvss_score > 0.0:
+        cvss_component = min(10.0, max(0.0, cvss_score)) * 10.0
+        base = (base * 0.6) + (cvss_component * 0.4)
+
+    conf_mult = {
+        'High': 1.0,
+        'Medium': 0.85,
+        'Low': 0.65,
+        'False Positive': 0.05,
+    }.get(confidence, 0.85)
+
+    asset_mult = {
+        'Critical': 1.25,
+        'High': 1.10,
+        'Medium': 1.00,
+        'Low': 0.85,
+    }.get(asset_criticality, 1.00)
+
+    env_mult = {
+        'Production': 1.20,
+        'Staging': 1.05,
+        'Development': 0.90,
+    }.get(environment, 0.90)
+
+    rec_mult = 1.15 if recurrence_count >= 3 else (1.08 if recurrence_count == 2 else 1.0)
+
+    calculated = base * conf_mult * asset_mult * env_mult * rec_mult
+    risk_score = min(100.0, max(0.0, round(calculated, 1)))
+
+    if risk_score >= 80.0:
+        priority = "P0 - Blocker"
+        action = "Immediate remediation required. Blocks release gates. Notify security lead."
+    elif risk_score >= 60.0:
+        priority = "P1 - High"
+        action = "Remediate prior to production release. High exploitability or asset exposure."
+    elif risk_score >= 35.0:
+        priority = "P2 - Medium"
+        action = "Prioritize in current sprint cycle. Implement defensive mitigations."
+    elif risk_score >= 15.0:
+        priority = "P3 - Low"
+        action = "Resolve during routine maintenance or code hygiene sprint."
+    else:
+        priority = "P4 - Informational"
+        action = "Informational observation. Review security best practices or accept risk."
+
+    return risk_score, priority, action
+
+
 def calculate_risk_score(severity: str, confidence: str) -> float:
-    """Calculate risk score for a single finding."""
-    base = SEVERITY_SCORES.get(severity, 20)
+    """Calculate baseline risk score for a single finding."""
+    canonical_sev = normalize_severity(severity)
+    base = SEVERITY_SCORES.get(canonical_sev, 20)
     multiplier = CONFIDENCE_MULTIPLIERS.get(confidence, 0.8)
     return round(base * multiplier, 1)
 

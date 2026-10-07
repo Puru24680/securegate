@@ -1,21 +1,159 @@
 export type Severity = 'Critical' | 'High' | 'Medium' | 'Low' | 'Informational';
 export type ReleaseStatus = 'PASS' | 'REVIEW' | 'BLOCK' | 'PENDING';
-export type FindingStatus = 'open' | 'reviewed' | 'accepted' | 'fixed';
+export type FindingStatus =
+  | 'open'
+  | 'confirmed'
+  | 'in_progress'
+  | 'resolved'
+  | 'accepted'
+  | 'false_positive'
+  | 'reopened'
+  | 'reviewed'
+  | 'fixed';
+
+export interface User {
+  id: number;
+  email: string;
+  full_name: string;
+  is_active?: boolean;
+  role?: string;
+}
+
+export interface Organization {
+  id: number;
+  name: string;
+  slug: string;
+  created_at: string;
+  project_count: number;
+  member_count: number;
+  members?: Array<{
+    id: number;
+    user_id: number;
+    role: string;
+    user: User;
+  }>;
+}
 
 export interface Project {
   id: number;
+  organization_id?: number;
   name: string;
   description: string;
   target_url: string;
+  environment?: string;
+  repository_url?: string;
   is_demo: boolean;
   created_at: string;
   updated_at: string;
   scan_count: number;
+  asset_count?: number;
   latest_scan?: Scan;
+}
+
+export interface Asset {
+  id: number;
+  organization_id: number;
+  project_id: number;
+  asset_type: 'domain' | 'url' | 'endpoint' | 'api_endpoint' | 'technology';
+  name: string;
+  url: string;
+  http_method: string;
+  parameters?: string;
+  technology?: string;
+  criticality: 'Critical' | 'High' | 'Medium' | 'Low';
+  status: string;
+  first_seen: string;
+  last_seen: string;
+  created_at: string;
+  finding_count?: number;
+  findings?: Finding[];
+}
+
+export interface ScanJob {
+  id: number;
+  job_identifier: string;
+  organization_id: number;
+  project_id: number;
+  target_url: string;
+  scan_type: string;
+  status: 'QUEUED' | 'INITIALIZING' | 'RUNNING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'TIMEOUT';
+  progress: number;
+  stage_message: string;
+  logs: string[];
+  error_message?: string;
+  triggered_by?: string;
+  scan_id?: number;
+  created_at: string;
+  started_at?: string;
+  completed_at?: string;
+  scan?: Scan;
+}
+
+export interface FindingOccurrence {
+  id: number;
+  finding_id: number;
+  scan_id: number;
+  url: string;
+  method: string;
+  parameter?: string;
+  evidence?: string;
+  attack_payload?: string;
+  created_at: string;
+}
+
+export interface RiskAcceptance {
+  id: number;
+  finding_id: number;
+  organization_id: number;
+  user_id: number;
+  justification: string;
+  approved_by: string;
+  expires_at: string;
+  status: string;
+  created_at: string;
+}
+
+export interface FalsePositive {
+  id: number;
+  finding_id: number;
+  organization_id: number;
+  user_id: number;
+  reason: string;
+  created_at: string;
+}
+
+export interface AuditLog {
+  id: number;
+  organization_id: number;
+  user_id?: number;
+  user_email: string;
+  action: string;
+  resource_type: string;
+  resource_id?: string;
+  details: any;
+  ip_address: string;
+  created_at: string;
+}
+
+export interface SecurityPolicy {
+  id: number;
+  organization_id: number;
+  project_id?: number;
+  name: string;
+  block_critical: boolean;
+  block_high: boolean;
+  block_medium: boolean;
+  min_cvss_block: number;
+  max_critical_allowed: number;
+  max_high_allowed: number;
+  require_production_authorization: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface Scan {
   id: number;
+  organization_id?: number;
   project_id: number;
   scan_identifier: string;
   target_url: string;
@@ -37,29 +175,42 @@ export interface Scan {
 
 export interface Finding {
   id: number;
+  fingerprint?: string;
+  organization_id?: number;
+  project_id?: number;
   scan_id: number;
+  asset_id?: number;
   name: string;
   description: string;
   severity: Severity;
   confidence: string;
+  cvss_score?: number;
+  risk_score: number;
+  cwe_id: string;
+  owasp_category: string;
+  owasp_year: string;
   url: string;
+  endpoint?: string;
   method: string;
   parameter: string;
   evidence: string;
   solution: string;
   reference: string;
-  cwe_id: string;
-  owasp_category: string;
-  owasp_year: string;
-  risk_score: number;
-  status: FindingStatus;
   plugin_id: string;
   alert_ref: string;
+  status: FindingStatus;
+  first_seen?: string;
+  last_seen?: string;
+  resolved_at?: string;
   created_at: string;
+  risk_acceptance?: RiskAcceptance;
+  false_positive?: FalsePositive;
+  occurrence_count?: number;
 }
 
 export interface Release {
   id: number;
+  organization_id?: number;
   project_id: number;
   scan_id?: number;
   version: string;

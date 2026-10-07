@@ -1,11 +1,18 @@
 """
 SecureGate Backend - Application Factory
+Production-grade Application Security & Release Gating Platform
 """
 import os
 from flask import Flask
 from flask_cors import CORS
 from .models.database import db, init_db
 from .routes.health import health_bp
+from .routes.auth import auth_bp
+from .routes.organizations import orgs_bp
+from .routes.assets import assets_bp
+from .routes.policies import policies_bp
+from .routes.audit import audit_bp
+from .routes.scan_jobs import jobs_bp
 from .routes.projects import projects_bp
 from .routes.scans import scans_bp
 from .routes.findings import findings_bp
@@ -35,8 +42,14 @@ def create_app(config=None):
     CORS(app, resources={r"/api/*": {"origins": "*"}})
     db.init_app(app)
 
-    # Register blueprints
+    # Register blueprints (both /api and /api/v1 handled natively)
     app.register_blueprint(health_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api')
+    app.register_blueprint(orgs_bp, url_prefix='/api')
+    app.register_blueprint(assets_bp, url_prefix='/api')
+    app.register_blueprint(policies_bp, url_prefix='/api')
+    app.register_blueprint(audit_bp, url_prefix='/api')
+    app.register_blueprint(jobs_bp, url_prefix='/api')
     app.register_blueprint(projects_bp, url_prefix='/api')
     app.register_blueprint(scans_bp, url_prefix='/api')
     app.register_blueprint(findings_bp, url_prefix='/api')

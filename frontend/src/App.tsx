@@ -9,6 +9,9 @@ import { SettingsPage } from './pages/SettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { CiCdPage } from './pages/CiCdPage';
 import { ZapScannerPage } from './pages/ZapScannerPage';
+import { AssetInventoryPage } from './pages/AssetInventoryPage';
+import { PoliciesPage } from './pages/PoliciesPage';
+import { AuditTrailPage } from './pages/AuditTrailPage';
 import { Project, Scan, DashboardData } from './types';
 import { api } from './services/api';
 
@@ -230,6 +233,18 @@ export function App() {
           projects={projects}
           activeProject={activeProject}
         />
+      )}
+
+      {currentTab === 'assets' && (
+        <AssetInventoryPage activeProject={activeProject} />
+      )}
+
+      {currentTab === 'policies' && (
+        <PoliciesPage activeProject={activeProject} />
+      )}
+
+      {currentTab === 'audit' && (
+        <AuditTrailPage />
       )}
 
       {currentTab === 'settings' && <SettingsPage />}

@@ -12,6 +12,7 @@ import {
   Layers,
   Zap,
   GitBranch,
+  Activity,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -31,10 +32,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'findings', label: 'Findings', icon: ShieldAlert },
-    { id: 'scans', label: 'Scans', icon: ScanSearch },
+    { id: 'assets', label: 'Asset Inventory', icon: Layers },
+    { id: 'scans', label: 'Scans & Jobs', icon: ScanSearch },
     { id: 'zap-scanner', label: 'ZAP Scanner', icon: Zap },
     { id: 'ci-cd', label: 'CI/CD & Actions', icon: GitBranch },
+    { id: 'policies', label: 'Gate Policies', icon: Shield },
     { id: 'releases', label: 'Releases', icon: GitMerge },
+    { id: 'audit', label: 'Audit Trail', icon: Activity },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'projects', label: 'Projects', icon: FolderGit2 },
     { id: 'settings', label: 'Settings', icon: Sliders },

@@ -1,20 +1,28 @@
 """
 Scan Service
-Orchestrates report ingestion, finding normalization, risk evaluation, and release gating.
+Orchestrates report ingestion, finding normalization, vulnerability lifecycle deduplication,
+asset inventory discovery, deterministic contextual risk scoring, and release gating.
 """
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Tuple
+from urllib.parse import urlparse
 
-from ..models.database import db, Project, Scan, Finding, Release, AppSettings
+from ..models.database import (
+    db, Project, Scan, Finding, FindingOccurrence, Asset,
+    Release, SecurityPolicy, AppSettings
+)
 from ..parsers.zap_parser import zap_parser
 from ..security.severity_engine import (
     normalize_severity,
     calculate_security_score,
     calculate_release_status,
+    calculate_contextual_risk_score,
     enrich_finding,
     SEVERITY_ORDER
 )
+from ..security.fingerprint import compute_finding_fingerprint, normalize_endpoint_path
+from ..security.audit import AuditLogger
 
 
 class ScanService:
@@ -23,13 +31,17 @@ class ScanService:
         project_id: int,
         raw_report_data: Any,
         target_url: Optional[str] = None,
-        scan_identifier: Optional[str] = None
+        scan_identifier: Optional[str] = None,
+        triggered_by: str = "manual",
+        user_id: Optional[int] = None,
+        user_email: Optional[str] = None
     ) -> Scan:
         """
-        Parses a ZAP JSON report, enriches findings, stores models,
-        calculates security score and evaluates the release gate.
+        Parses a ZAP JSON report, dedupes findings via SHA-256 fingerprints,
+        updates vulnerability lifecycle states, discovers assets,
+        calculates contextual risk scores, and evaluates security release policies.
         """
-        from urllib.parse import urlparse
+        now = datetime.now(timezone.utc)
 
         # Detect real target URL from the ZAP report itself
         detected_target = zap_parser.extract_target_url(raw_report_data)
@@ -47,18 +59,19 @@ class ScanService:
 
         # If detected target is an external/custom website and differs from selected project's target
         if detected_target and ("localhost" not in detected_target and "127.0.0.1" not in detected_target):
-            # Check if matching project already exists for this target
             matching = Project.query.filter(Project.target_url == detected_target).first()
             if matching:
                 project = matching
             elif not project or project.target_url != detected_target:
-                # Create dedicated project for this custom scanned website so it never overwrites other targets
                 parsed = urlparse(detected_target)
                 hostname = parsed.netloc or parsed.path or "Custom Web Application"
+                org_id = project.organization_id if project else 1
                 new_proj = Project(
+                    organization_id=org_id,
                     name=hostname,
                     target_url=detected_target,
-                    description=f"Auto-registered target project from OWASP ZAP scan of {detected_target}.",
+                    description=f"Auto-registered target project from scan of {detected_target}.",
+                    environment="Development",
                     is_demo=False
                 )
                 db.session.add(new_proj)
@@ -69,20 +82,29 @@ class ScanService:
             project = Project.query.first()
         if not project:
             project = Project(
+                organization_id=1,
                 name="OWASP Juice Shop",
                 target_url=resolved_url,
                 description="Default web application target for pre-release security gating.",
+                environment="Development",
                 is_demo=True
             )
             db.session.add(project)
             db.session.commit()
 
-        # Parse alerts from ZAP JSON
+        # Parse alerts from raw ZAP JSON
         raw_findings = zap_parser.parse(raw_report_data)
 
-        # Retrieve current release policy
+        if not scan_identifier:
+            scan_identifier = f"ZAP-{now.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+
+        # Retrieve applicable security policy
+        policy_obj = (
+            SecurityPolicy.query.filter_by(project_id=project.id).first()
+            or SecurityPolicy.query.filter_by(organization_id=project.organization_id, project_id=None).first()
+        )
         settings = AppSettings.query.first()
-        policy = settings.to_dict()['release_policy'] if settings else {
+        policy_dict = settings.to_dict()['release_policy'] if settings else {
             'critical': 'BLOCK',
             'high': 'BLOCK',
             'medium': 'REVIEW',
@@ -90,12 +112,55 @@ class ScanService:
             'informational': 'PASS',
         }
 
-        if not scan_identifier:
-            scan_identifier = f"ZAP-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
+        # 1. Discover or link Target Root Asset
+        root_parsed = urlparse(resolved_url)
+        root_name = root_parsed.path or "/"
+        root_asset = Asset.query.filter_by(
+            project_id=project.id,
+            name=root_name,
+            http_method="GET"
+        ).first()
+        if not root_asset:
+            root_asset = Asset(
+                organization_id=project.organization_id,
+                project_id=project.id,
+                asset_type="domain" if root_name == "/" else "endpoint",
+                name=root_name,
+                url=resolved_url,
+                http_method="GET",
+                criticality="High" if project.environment == "Production" else "Medium",
+                last_seen=now
+            )
+            db.session.add(root_asset)
+            db.session.flush()
 
-        # Enrich and build finding records
-        findings_to_create = []
+        # 2. Enrich, fingerprint, and discover assets for each finding
+        current_scan_fingerprints = set()
+        active_findings_for_gate = []
         severity_counts = {s: 0 for s in SEVERITY_ORDER}
+
+        # First create the Scan record
+        scan = Scan(
+            organization_id=project.organization_id,
+            project_id=project.id,
+            scan_identifier=scan_identifier,
+            target_url=resolved_url,
+            started_at=now,
+            completed_at=now,
+            duration=35,
+            security_score=100.0,
+            release_status="PENDING",
+            total_findings=0,
+            critical_count=0,
+            high_count=0,
+            medium_count=0,
+            low_count=0,
+            informational_count=0,
+            scanner="OWASP ZAP",
+            created_at=now
+        )
+        db.session.add(scan)
+        db.session.flush()
 
         for rf in raw_findings:
             f_dict = {
@@ -104,88 +169,193 @@ class ScanService:
                 'severity': rf.severity,
                 'confidence': rf.confidence,
                 'url': rf.url or resolved_url,
-                'method': rf.method,
-                'parameter': rf.parameter,
-                'evidence': rf.evidence,
-                'solution': rf.solution,
-                'reference': rf.reference,
-                'cwe_id': rf.cwe_id,
-                'plugin_id': rf.plugin_id,
-                'alert_ref': rf.alert_ref,
+                'method': rf.method or "GET",
+                'parameter': rf.parameter or "",
+                'evidence': rf.evidence or "",
+                'solution': rf.solution or "",
+                'reference': rf.reference or "",
+                'cwe_id': rf.cwe_id or "N/A",
+                'plugin_id': rf.plugin_id or "",
+                'alert_ref': rf.alert_ref or "",
             }
-            enriched = enrich_finding(f_dict, policy)
-            severity = enriched['severity']
-            severity_counts[severity] = severity_counts.get(severity, 0) + 1
-            findings_to_create.append(enriched)
+            enriched = enrich_finding(f_dict, policy_dict)
+            norm_severity = enriched['severity']
 
-        # Calculate scores and release decision
-        sec_score = calculate_security_score(findings_to_create)
-        status, reason, blocking_count, review_count = calculate_release_status(findings_to_create, policy)
+            # Auto-register Endpoint Asset
+            endpoint_path = normalize_endpoint_path(enriched['url'])
+            asset = Asset.query.filter_by(
+                project_id=project.id,
+                name=endpoint_path,
+                http_method=enriched['method']
+            ).first()
+            if not asset:
+                asset = Asset(
+                    organization_id=project.organization_id,
+                    project_id=project.id,
+                    asset_type="api_endpoint" if "/api" in endpoint_path else "endpoint",
+                    name=endpoint_path,
+                    url=enriched['url'],
+                    http_method=enriched['method'],
+                    parameters=enriched['parameter'],
+                    criticality="High" if project.environment == "Production" else "Medium",
+                    first_seen=now,
+                    last_seen=now
+                )
+                db.session.add(asset)
+                db.session.flush()
+            else:
+                asset.last_seen = now
 
-        # Create Scan record
-        now = datetime.now(timezone.utc)
-        scan = Scan(
-            project_id=project.id,
-            scan_identifier=scan_identifier,
-            target_url=resolved_url,
-            started_at=now,
-            completed_at=now,
-            duration=35, # standard baseline duration in seconds
-            security_score=sec_score,
-            release_status=status,
-            total_findings=len(findings_to_create),
-            critical_count=severity_counts.get('Critical', 0),
-            high_count=severity_counts.get('High', 0),
-            medium_count=severity_counts.get('Medium', 0),
-            low_count=severity_counts.get('Low', 0),
-            informational_count=severity_counts.get('Informational', 0),
-            scanner="OWASP ZAP",
-            created_at=now
-        )
-        db.session.add(scan)
-        db.session.flush() # obtain scan.id
+            # Compute canonical SHA-256 fingerprint
+            fp = compute_finding_fingerprint(
+                project_id=project.id,
+                cwe_id=enriched['cwe_id'],
+                url=enriched['url'],
+                parameter=enriched['parameter'],
+                plugin_id=enriched['plugin_id'],
+                finding_name=enriched['name']
+            )
+            current_scan_fingerprints.add(fp)
 
-        # Attach findings to scan
-        current_finding_names = set()
-        for f in findings_to_create:
-            current_finding_names.add(f['name'])
-            finding_model = Finding(
+            # Deduplication & Lifecycle check
+            existing_finding = Finding.query.filter_by(
+                project_id=project.id,
+                fingerprint=fp
+            ).first()
+
+            if existing_finding:
+                # Recurrence tracking
+                rec_count = FindingOccurrence.query.filter_by(finding_id=existing_finding.id).count() + 1
+                risk_score, priority, _ = calculate_contextual_risk_score(
+                    severity=norm_severity,
+                    confidence=enriched['confidence'],
+                    cvss_score=existing_finding.cvss_score,
+                    asset_criticality=asset.criticality,
+                    environment=project.environment,
+                    recurrence_count=rec_count
+                )
+                existing_finding.last_seen = now
+                existing_finding.scan_id = scan.id
+                existing_finding.asset_id = asset.id
+                existing_finding.risk_score = risk_score
+                existing_finding.severity = norm_severity
+                existing_finding.evidence = enriched['evidence']
+
+                # Lifecycle regression handling
+                if existing_finding.status == 'resolved':
+                    existing_finding.status = 'reopened'
+                    existing_finding.resolved_at = None
+                # Note: if existing_finding.status is 'accepted' or 'false_positive', we preserve it!
+
+                finding_record = existing_finding
+            else:
+                # Brand new finding
+                risk_score, priority, _ = calculate_contextual_risk_score(
+                    severity=norm_severity,
+                    confidence=enriched['confidence'],
+                    cvss_score=0.0,
+                    asset_criticality=asset.criticality,
+                    environment=project.environment,
+                    recurrence_count=1
+                )
+                finding_record = Finding(
+                    fingerprint=fp,
+                    organization_id=project.organization_id,
+                    project_id=project.id,
+                    scan_id=scan.id,
+                    asset_id=asset.id,
+                    name=enriched['name'],
+                    description=enriched['description'],
+                    severity=norm_severity,
+                    confidence=enriched['confidence'],
+                    cvss_score=0.0,
+                    risk_score=risk_score,
+                    cwe_id=enriched['cwe_id'],
+                    owasp_category=enriched['owasp_category'],
+                    owasp_year=enriched['owasp_year'],
+                    url=enriched['url'],
+                    endpoint=endpoint_path,
+                    method=enriched['method'],
+                    parameter=enriched['parameter'],
+                    evidence=enriched['evidence'],
+                    solution=enriched['solution'],
+                    reference=enriched['reference'],
+                    plugin_id=enriched['plugin_id'],
+                    alert_ref=enriched['alert_ref'],
+                    status='open',
+                    first_seen=now,
+                    last_seen=now,
+                    created_at=now
+                )
+                db.session.add(finding_record)
+                db.session.flush()
+
+            # Record occurrence
+            occurrence = FindingOccurrence(
+                finding_id=finding_record.id,
                 scan_id=scan.id,
-                name=f['name'],
-                description=f['description'],
-                severity=f['severity'],
-                confidence=f['confidence'],
-                url=f['url'],
-                method=f['method'],
-                parameter=f['parameter'],
-                evidence=f['evidence'],
-                solution=f['solution'],
-                reference=f['reference'],
-                cwe_id=f['cwe_id'],
-                owasp_category=f['owasp_category'],
-                owasp_year=f['owasp_year'],
-                risk_score=f['risk_score'],
-                plugin_id=f['plugin_id'],
-                alert_ref=f['alert_ref'],
-                status='open',
+                url=enriched['url'],
+                method=enriched['method'],
+                parameter=enriched['parameter'],
+                evidence=enriched['evidence'],
                 created_at=now
             )
-            db.session.add(finding_model)
+            db.session.add(occurrence)
 
-        # In pre-release gating: if an earlier open finding is no longer detected in this new scan, mark it fixed
-        earlier_open_findings = Finding.query.join(Scan).filter(
-            Scan.project_id == project.id,
-            Finding.scan_id != scan.id,
-            Finding.status == 'open'
+            severity_counts[norm_severity] = severity_counts.get(norm_severity, 0) + 1
+
+            # Only count towards gating if not accepted and not false-positive
+            if finding_record.status not in ('accepted', 'false_positive'):
+                active_findings_for_gate.append({
+                    'severity': norm_severity,
+                    'name': finding_record.name,
+                    'cvss_score': finding_record.cvss_score,
+                    'risk_score': finding_record.risk_score
+                })
+
+        # 3. Mark previous findings that were NOT seen in this scan as resolved
+        earlier_active = Finding.query.filter(
+            Finding.project_id == project.id,
+            Finding.status.in_(['open', 'confirmed', 'in_progress', 'reopened'])
         ).all()
-        for prev_f in earlier_open_findings:
-            if prev_f.name not in current_finding_names:
-                prev_f.status = 'fixed'
 
-        # Create Release entry
+        for prev_f in earlier_active:
+            if prev_f.fingerprint and prev_f.fingerprint not in current_scan_fingerprints:
+                prev_f.status = 'resolved'
+                prev_f.resolved_at = now
+
+        # 4. Calculate Scores and Evaluate Gate Decisions
+        sec_score = calculate_security_score(active_findings_for_gate)
+        status, reason, blocking_count, review_count = calculate_release_status(
+            active_findings_for_gate, policy_dict
+        )
+
+        # Policy checks from SecurityPolicy model if present
+        if policy_obj:
+            crit_count = severity_counts.get('Critical', 0)
+            high_count = severity_counts.get('High', 0)
+            if policy_obj.block_critical and crit_count > policy_obj.max_critical_allowed:
+                status = "BLOCK"
+                reason = f"Security Policy violation: {crit_count} Critical vulnerabilities exceed max allowed ({policy_obj.max_critical_allowed})."
+            elif policy_obj.block_high and high_count > policy_obj.max_high_allowed:
+                status = "BLOCK"
+                reason = f"Security Policy violation: {high_count} High vulnerabilities exceed max allowed ({policy_obj.max_high_allowed})."
+
+        # Update Scan stats
+        scan.security_score = sec_score
+        scan.release_status = status
+        scan.total_findings = len(current_scan_fingerprints)
+        scan.critical_count = severity_counts.get('Critical', 0)
+        scan.high_count = severity_counts.get('High', 0)
+        scan.medium_count = severity_counts.get('Medium', 0)
+        scan.low_count = severity_counts.get('Low', 0)
+        scan.informational_count = severity_counts.get('Informational', 0)
+
+        # 5. Create Release entry
         rel_count = Release.query.filter_by(project_id=project.id).count()
         release_ver = f"v1.{rel_count + 1}.0"
         release_entry = Release(
+            organization_id=project.organization_id,
             project_id=project.id,
             scan_id=scan.id,
             version=release_ver,
@@ -197,15 +367,34 @@ class ScanService:
         )
         db.session.add(release_entry)
 
-        # Commit all changes
         project.updated_at = now
         db.session.commit()
+
+        # 6. Immutable Audit Log
+        AuditLogger.log(
+            org_id=project.organization_id,
+            action="scan.completed",
+            resource_type="scan",
+            resource_id=str(scan.id),
+            user_id=user_id,
+            user_email=user_email or "system",
+            details={
+                "project_id": project.id,
+                "project_name": project.name,
+                "target_url": resolved_url,
+                "total_findings": scan.total_findings,
+                "release_status": status,
+                "security_score": sec_score,
+                "triggered_by": triggered_by
+            }
+        )
 
         return scan
 
     @staticmethod
     def get_findings_filtered(
         project_id: Optional[int] = None,
+        organization_id: Optional[int] = None,
         scan_id: Optional[int] = None,
         severity: Optional[str] = None,
         owasp_category: Optional[str] = None,
@@ -215,13 +404,16 @@ class ScanService:
         page: int = 1,
         per_page: int = 20
     ) -> Tuple[List[Finding], int]:
-        """Query findings with rich filters, search, and pagination."""
+        """Query canonical findings with rich filters, search, and pagination."""
         query = Finding.query
+
+        if organization_id:
+            query = query.filter(Finding.organization_id == organization_id)
 
         if scan_id:
             query = query.filter(Finding.scan_id == scan_id)
         elif project_id:
-            query = query.join(Scan).filter(Scan.project_id == project_id)
+            query = query.filter(Finding.project_id == project_id)
 
         if severity and severity.lower() != 'all':
             query = query.filter(Finding.severity == normalize_severity(severity))
@@ -241,11 +433,10 @@ class ScanService:
                 (Finding.name.ilike(search_term)) |
                 (Finding.description.ilike(search_term)) |
                 (Finding.url.ilike(search_term)) |
-                (Finding.parameter.ilike(search_term))
+                (Finding.parameter.ilike(search_term)) |
+                (Finding.endpoint.ilike(search_term))
             )
 
-        # Order by severity priority, then risk score descending
-        # Critical, High, Medium, Low, Informational
         total = query.count()
         findings = query.order_by(Finding.risk_score.desc(), Finding.id.asc()).offset((page - 1) * per_page).limit(per_page).all()
         return findings, total

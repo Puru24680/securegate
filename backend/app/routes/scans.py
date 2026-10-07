@@ -6,13 +6,19 @@ from flask import Blueprint, jsonify, request
 from ..models.database import db, Scan, Project
 from ..services.scan_service import scan_service
 
+from ..security.auth import get_tenant_org_id, get_authenticated_user_context
+
 scans_bp = Blueprint('scans', __name__)
 
 
 @scans_bp.route('/scans', methods=['GET'])
+@scans_bp.route('/v1/scans', methods=['GET'])
 def list_scans():
     project_id = request.args.get('project_id', type=int)
+    org_id = get_tenant_org_id()
     query = Scan.query
+    if org_id:
+        query = query.filter_by(organization_id=org_id)
     if project_id:
         query = query.filter_by(project_id=project_id)
 
@@ -25,6 +31,7 @@ def list_scans():
 
 
 @scans_bp.route('/scans/<int:scan_id>', methods=['GET'])
+@scans_bp.route('/v1/scans/<int:scan_id>', methods=['GET'])
 def get_scan(scan_id):
     scan = db.session.get(Scan, scan_id)
     if not scan:
@@ -72,6 +79,7 @@ def get_scan_findings(scan_id):
 
 
 @scans_bp.route('/scans/upload', methods=['POST'])
+@scans_bp.route('/v1/scans/upload', methods=['POST'])
 def upload_scan_report():
     """
     Accepts OWASP ZAP JSON scan report either via multipart file upload or JSON payload.
@@ -124,11 +132,15 @@ def upload_scan_report():
         project_id = proj.id
 
     try:
+        user_ctx = get_authenticated_user_context()
         scan = scan_service.process_zap_report(
             project_id=project_id,
             raw_report_data=raw_data,
             target_url=target_url,
-            scan_identifier=scan_identifier
+            scan_identifier=scan_identifier,
+            triggered_by="upload",
+            user_id=user_ctx.get("user_id") if user_ctx else None,
+            user_email=user_ctx.get("email") if user_ctx else "analyst"
         )
         return jsonify({
             "status": "success",
