@@ -29,13 +29,48 @@ class ScanService:
         Parses a ZAP JSON report, enriches findings, stores models,
         calculates security score and evaluates the release gate.
         """
+        from urllib.parse import urlparse
+
+        # Detect real target URL from the ZAP report itself
+        detected_target = zap_parser.extract_target_url(raw_report_data)
+
+        # Determine effective target URL
+        if detected_target and str(detected_target).strip():
+            resolved_url = str(detected_target).strip()
+        elif target_url and str(target_url).strip() and str(target_url).strip() != "http://localhost:3000":
+            resolved_url = str(target_url).strip()
+        else:
+            resolved_url = target_url or "http://localhost:3000"
+
+        # Resolve or auto-register project based on detected target
         project = db.session.get(Project, project_id) if project_id else None
+
+        # If detected target is an external/custom website and differs from selected project's target
+        if detected_target and ("localhost" not in detected_target and "127.0.0.1" not in detected_target):
+            # Check if matching project already exists for this target
+            matching = Project.query.filter(Project.target_url == detected_target).first()
+            if matching:
+                project = matching
+            elif project and project.name == "OWASP Juice Shop":
+                # Create dedicated project for this custom scanned website so it never overwrites Juice Shop
+                parsed = urlparse(detected_target)
+                hostname = parsed.netloc or parsed.path or "Custom Web Application"
+                new_proj = Project(
+                    name=hostname,
+                    target_url=detected_target,
+                    description=f"Auto-registered target project from OWASP ZAP scan of {detected_target}.",
+                    is_demo=False
+                )
+                db.session.add(new_proj)
+                db.session.commit()
+                project = new_proj
+
         if not project:
             project = Project.query.first()
         if not project:
             project = Project(
                 name="OWASP Juice Shop",
-                target_url=target_url or "http://localhost:3000",
+                target_url=resolved_url,
                 description="Default web application target for pre-release security gating.",
                 is_demo=True
             )
@@ -55,8 +90,6 @@ class ScanService:
             'informational': 'PASS',
         }
 
-        # Determine effective target URL
-        resolved_url = target_url or project.target_url or "http://localhost:3000"
         if not scan_identifier:
             scan_identifier = f"ZAP-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:6]}"
 

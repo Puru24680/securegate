@@ -56,6 +56,38 @@ class NormalizedFinding:
 class ZAPParser:
     """Parses OWASP ZAP JSON reports."""
 
+    def extract_target_url(self, raw_data: Any) -> str | None:
+        """Extract authoritative target URL or hostname from ZAP JSON report."""
+        if isinstance(raw_data, (str, bytes)):
+            try:
+                data = json.loads(raw_data)
+            except Exception:
+                return None
+        elif isinstance(raw_data, dict):
+            data = raw_data
+        else:
+            return None
+
+        # Check standard site array
+        sites = data.get('site')
+        if isinstance(sites, list) and sites and isinstance(sites[0], dict):
+            target = sites[0].get('@name') or sites[0].get('name')
+            if target and str(target).strip():
+                return str(target).strip()
+        elif isinstance(sites, dict):
+            target = sites.get('@name') or sites.get('name')
+            if target and str(target).strip():
+                return str(target).strip()
+
+        # Check wrapper keys
+        for wrapper in ['report', 'OWASPZAPReport', 'zapReport']:
+            if wrapper in data and isinstance(data[wrapper], dict):
+                res = self.extract_target_url(data[wrapper])
+                if res:
+                    return res
+
+        return None
+
     def parse(self, raw_data: Any) -> list[NormalizedFinding]:
         """
         Parse ZAP JSON data.

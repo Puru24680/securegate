@@ -94,12 +94,24 @@ export function App() {
   };
 
   const handleScanCompleted = async (scan: Scan) => {
-    setActiveScanId(scan.id);
-    setReportScanId(scan.id);
-    if (activeProjectId) {
-      await loadDashboard(activeProjectId, scan.id);
+    try {
+      setLoadingDashboard(true);
+      // Reload projects list so newly registered targets appear immediately
+      const projs = await api.getProjects();
+      setProjects(projs);
+
+      const targetProjId = scan.project_id || (projs[0]?.id ?? 1);
+      setActiveProjectId(targetProjId);
+      setActiveScanId(scan.id);
+      setReportScanId(scan.id);
+
+      await loadDashboard(targetProjId, scan.id);
+    } catch (err) {
+      console.error('Error handling scan completion:', err);
+    } finally {
+      setLoadingDashboard(false);
+      setCurrentTab('dashboard');
     }
-    setCurrentTab('dashboard');
   };
 
   const handleTriggerPreset = async (preset: 'juiceshop' | 'clean' | 'medium') => {

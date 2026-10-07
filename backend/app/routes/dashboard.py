@@ -17,14 +17,19 @@ def get_dashboard_data():
 
     # If no projects exist, seed demo data automatically
     all_projects = Project.query.all()
-    if not all_projects:
-        seed_demo_data()
-        all_projects = Project.query.all()
-
-    # Select project
+    project = None
     if project_id:
         project = db.session.get(Project, project_id)
-    else:
+
+    # Active scan selection
+    active_scan = None
+    if scan_id:
+        active_scan = db.session.get(Scan, scan_id)
+        if active_scan:
+            # Synchronize project to the requested scan's project
+            project = db.session.get(Project, active_scan.project_id) or project
+
+    if not project:
         project = all_projects[0] if all_projects else None
 
     if not project:
@@ -36,13 +41,6 @@ def get_dashboard_data():
 
     # Scans for this project
     scans = Scan.query.filter_by(project_id=project.id).order_by(Scan.created_at.desc()).all()
-
-    # Active scan selection (specific scan_id or latest)
-    active_scan = None
-    if scan_id:
-        active_scan = db.session.get(Scan, scan_id)
-        if active_scan and active_scan.project_id != project.id:
-            active_scan = None
 
     if not active_scan:
         active_scan = scans[0] if scans else None

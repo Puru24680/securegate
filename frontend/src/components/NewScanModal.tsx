@@ -47,10 +47,22 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
       setError(null);
+
+      // Auto-detect target URL from file content
+      try {
+        const text = await selectedFile.text();
+        const json = JSON.parse(text);
+        const sites = json.site || json.report?.site;
+        const target = Array.isArray(sites) ? (sites[0]?.['@name'] || sites[0]?.name) : sites?.['@name'];
+        if (target && typeof target === 'string' && target.trim()) {
+          setTargetUrl(target.trim());
+        }
+      } catch {}
     }
   };
 
@@ -76,6 +88,14 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
         return;
       }
 
+      // Detect target URL directly from report if available
+      let effectiveTarget = targetUrl;
+      const sites = parsedReport.site || parsedReport.report?.site;
+      const autoTarget = Array.isArray(sites) ? (sites[0]?.['@name'] || sites[0]?.name) : sites?.['@name'];
+      if (autoTarget && typeof autoTarget === 'string' && autoTarget.trim()) {
+        effectiveTarget = autoTarget.trim();
+      }
+
       const effectiveProjectId = selectedProjectId || (projects[0]?.id ?? 1);
 
       // Try clean JSON payload first (most reliable across serverless/Vercel)
@@ -83,7 +103,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
         const scan = await api.uploadScanReport({
           project_id: effectiveProjectId,
           report: parsedReport,
-          target_url: targetUrl || 'http://localhost:3000',
+          target_url: effectiveTarget,
         });
         onScanCompleted(scan);
         onClose();
@@ -91,7 +111,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
       } catch (jsonUploadErr: any) {
         // Fallback to multipart file upload
         console.warn('JSON upload failed, trying multipart:', jsonUploadErr);
-        const scan = await api.uploadScanFile(file, effectiveProjectId, targetUrl);
+        const scan = await api.uploadScanFile(file, effectiveProjectId, effectiveTarget);
         onScanCompleted(scan);
         onClose();
         return;
