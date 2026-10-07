@@ -32,7 +32,7 @@ def _seed_default_settings():
 
 
 def _seed_default_project():
-    """Ensure at least one default project exists."""
+    """Ensure at least one default project and initial demo dataset exists."""
     if not Project.query.first():
         p = Project(
             name="OWASP Juice Shop",
@@ -42,6 +42,13 @@ def _seed_default_project():
         )
         db.session.add(p)
         db.session.commit()
+
+        # Seed initial demo scans so serverless instances on Vercel are never empty
+        try:
+            from ..services.demo_data import seed_demo_data
+            seed_demo_data()
+        except Exception:
+            pass
 
 
 class Project(db.Model):

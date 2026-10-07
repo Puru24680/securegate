@@ -166,22 +166,91 @@ def simulate_preset():
     }
 
     filename = filename_map.get(preset, 'zap_juiceshop_scan.json')
-    # Path relative to backend or repo root
     current_dir = os.path.dirname(os.path.abspath(__file__))
     repo_root = os.path.abspath(os.path.join(current_dir, '..', '..', '..'))
-    report_path = os.path.join(repo_root, 'reports', filename)
 
-    if not os.path.exists(report_path):
-        # Fallback to local reports directory
-        report_path = os.path.join('reports', filename)
+    candidate_paths = [
+        os.path.join(repo_root, 'reports', filename),
+        os.path.join('reports', filename),
+        os.path.join(os.getcwd(), 'reports', filename),
+        os.path.join(current_dir, '..', '..', 'reports', filename),
+    ]
 
-    if not os.path.exists(report_path):
-        return jsonify({"status": "error", "message": f"Preset report file {filename} not found at {report_path}"}), 404
+    raw_data = None
+    for p in candidate_paths:
+        if os.path.exists(p):
+            try:
+                with open(p, 'r', encoding='utf-8') as f:
+                    raw_data = json.load(f)
+                    break
+            except Exception:
+                pass
+
+    if not raw_data:
+        # Built-in fallback ZAP report format so preset simulation is 100% resilient on Vercel
+        if preset == 'juiceshop':
+            from ..services.demo_data import SAMPLE_JUICESHOP_FINDINGS
+            raw_data = {
+                "@version": "2.14.0",
+                "site": [{
+                    "@name": "http://localhost:3000",
+                    "alerts": [
+                        {
+                            "alert": f["name"],
+                            "riskcode": "3" if f["severity"] in ["Critical", "High"] else "2" if f["severity"] == "Medium" else "1",
+                            "confidence": "3" if f["confidence"] == "High" else "2",
+                            "desc": f["description"],
+                            "url": f["url"],
+                            "param": f["parameter"],
+                            "evidence": f["evidence"],
+                            "cweid": f["cwe_id"].replace("CWE-", "") if f.get("cwe_id") else "",
+                            "solution": f["solution"],
+                            "reference": f["reference"]
+                        }
+                        for f in SAMPLE_JUICESHOP_FINDINGS
+                    ]
+                }]
+            }
+        elif preset == 'clean':
+            raw_data = {
+                "@version": "2.14.0",
+                "site": [{
+                    "@name": "https://staging.internal.secgate.io",
+                    "alerts": [
+                        {
+                            "alert": "Cookie No HttpOnly Flag",
+                            "riskcode": "1",
+                            "confidence": "3",
+                            "desc": "A cookie has been set without HttpOnly.",
+                            "url": "https://staging.internal.secgate.io/api/auth",
+                            "param": "tracking_id",
+                            "cweid": "1004",
+                            "solution": "Set HttpOnly flag"
+                        }
+                    ]
+                }]
+            }
+        else:
+            raw_data = {
+                "@version": "2.14.0",
+                "site": [{
+                    "@name": "https://staging.internal.secgate.io",
+                    "alerts": [
+                        {
+                            "alert": "Absence of Anti-CSRF Tokens",
+                            "riskcode": "2",
+                            "confidence": "2",
+                            "desc": "No CSRF tokens were found in forms.",
+                            "url": "https://staging.internal.secgate.io/profile",
+                            "param": "username",
+                            "cweid": "352",
+                            "solution": "Implement CSRF tokens"
+                        }
+                    ]
+                }]
+            }
 
     try:
-        with open(report_path, 'r', encoding='utf-8') as f:
-            raw_data = json.load(f)
-
         identifier = f"SIM-{preset.upper()}-{int(db.session.query(Scan).count()) + 1}"
         scan = scan_service.process_zap_report(
             project_id=project_id,
