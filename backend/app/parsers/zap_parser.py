@@ -436,17 +436,20 @@ class ZAPParser:
             log_text = data.get(log_key)
             if isinstance(log_text, str) and log_text:
                 m = (
-                    re.search(r'Attacking\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
-                    re.search(r'completed host\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
-                    re.search(r'completed host/plugin\s+(https?://[^\s|]+)', log_text, re.IGNORECASE)
+                    re.search(r'Attacking\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
+                    re.search(r'completed host\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
+                    re.search(r'completed host/plugin\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE)
                 )
                 if m:
+                    cand = m.group(1).split('\\')[0].rstrip('/')
                     try:
                         from urllib.parse import urlparse
-                        p = urlparse(m.group(1).rstrip('/'))
-                        return f"{p.scheme}://{p.netloc}"
+                        p = urlparse(cand)
+                        if p.scheme and p.netloc:
+                            return f"{p.scheme}://{p.netloc}"
+                        return cand
                     except Exception:
-                        return m.group(1).rstrip('/')
+                        return cand
 
         # Check wrapper keys
         for wrapper in ['report', 'OWASPZAPReport', 'zapReport', 'Report']:
@@ -621,11 +624,20 @@ class ZAPParser:
 
         # Find target host from log
         target_match = (
-            re.search(r'Attacking\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
-            re.search(r'completed host\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
-            re.search(r'completed host/plugin\s+(https?://[^\s|]+)', log_text, re.IGNORECASE)
+            re.search(r'Attacking\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
+            re.search(r'completed host\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
+            re.search(r'completed host/plugin\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE)
         )
-        target = default_target or (target_match.group(1).rstrip('/') if target_match else "http://localhost")
+        if target_match:
+            cand = target_match.group(1).split('\\')[0].rstrip('/')
+            try:
+                from urllib.parse import urlparse
+                p = urlparse(cand)
+                target = f"{p.scheme}://{p.netloc}" if (p.scheme and p.netloc) else cand
+            except Exception:
+                target = cand
+        else:
+            target = default_target or "http://localhost"
 
         # Extract specific endpoints and parameters logged during rule execution
         endpoints_by_rule: dict[str, list[dict]] = {}
@@ -644,7 +656,7 @@ class ZAPParser:
 
         # Pattern: completed host/plugin <host> | <RuleName> in <time>s with <N> message(s) sent and <M> alert(s) raised.
         pattern = re.compile(
-            r'completed host/plugin\s+(https?://[^\s|]+)\s*\|\s*([a-zA-Z0-9_]+)\s+in\s+[\d.]+s.*?and\s+(\d+)\s+alert\(s\)\s+raised',
+            r'completed host/plugin\s+(https?://[^\s\r\n\\|"]+)\s*\|\s*([a-zA-Z0-9_]+)\s+in\s+[\d.]+s.*?and\s+(\d+)\s+alert\(s\)\s+raised',
             re.IGNORECASE
         )
         matches = pattern.findall(log_text)
@@ -652,7 +664,7 @@ class ZAPParser:
         for host, rule, count_str in matches:
             count = int(count_str)
             if count > 0:
-                h = host.rstrip('/')
+                h = host.split('\\')[0].rstrip('/')
                 rule_counts[rule] = (h, rule_counts.get(rule, (h, 0))[1] + count)
 
         alerts = []
