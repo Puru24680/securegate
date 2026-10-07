@@ -103,3 +103,62 @@ def test_deduplication():
     }
     findings = zap_parser.parse(duplicate_zap)
     assert len(findings) == 1
+
+
+def test_parse_xml_to_json_structure():
+    xml_json = {
+        "OWASPZAPReport": {
+            "site": {
+                "@name": "https://testphp.vulnweb.com",
+                "alerts": {
+                    "alertitem": [
+                        {
+                            "alert": "Cross Site Scripting",
+                            "riskcode": "3",
+                            "cweid": "79",
+                            "url": "https://testphp.vulnweb.com/search.php"
+                        }
+                    ]
+                }
+            }
+        }
+    }
+    findings = zap_parser.parse(xml_json)
+    assert len(findings) == 1
+    assert findings[0].name == "Cross Site Scripting"
+    assert findings[0].severity == "High"
+    assert findings[0].cwe_id == "CWE-79"
+    target = zap_parser.extract_target_url(xml_json)
+    assert target == "https://testphp.vulnweb.com"
+
+
+def test_parse_generic_vulnerabilities_array():
+    generic = {
+        "target": "https://example.com",
+        "vulnerabilities": [
+            {
+                "title": "SQL Injection",
+                "severity": "CRITICAL",
+                "url": "https://example.com/api",
+                "cwe_id": "89"
+            }
+        ]
+    }
+    findings = zap_parser.parse(generic)
+    assert len(findings) == 1
+    assert findings[0].name == "SQL Injection"
+    assert findings[0].severity == "Critical"
+
+
+def test_parse_flat_list_of_alerts():
+    flat_list = [
+        {
+            "alert": "Remote Code Execution",
+            "risk": "High",
+            "url": "https://custom.app/cmd"
+        }
+    ]
+    findings = zap_parser.parse(flat_list)
+    assert len(findings) == 1
+    assert findings[0].name == "Remote Code Execution"
+    assert findings[0].severity == "High"

@@ -57,7 +57,7 @@ class ZAPParser:
     """Parses OWASP ZAP JSON reports."""
 
     def extract_target_url(self, raw_data: Any) -> str | None:
-        """Extract authoritative target URL or hostname from ZAP JSON report."""
+        """Extract authoritative target URL or hostname from any vulnerability report."""
         if isinstance(raw_data, (str, bytes)):
             try:
                 data = json.loads(raw_data)
@@ -65,26 +65,45 @@ class ZAPParser:
                 return None
         elif isinstance(raw_data, dict):
             data = raw_data
+        elif isinstance(raw_data, list) and data and isinstance(data[0], dict):
+            return data[0].get('url') or data[0].get('uri')
         else:
             return None
 
-        # Check standard site array
-        sites = data.get('site')
+        # Check standard site array or dict
+        sites = data.get('site') or data.get('sites')
         if isinstance(sites, list) and sites and isinstance(sites[0], dict):
-            target = sites[0].get('@name') or sites[0].get('name')
+            target = sites[0].get('@name') or sites[0].get('name') or sites[0].get('host')
             if target and str(target).strip():
                 return str(target).strip()
         elif isinstance(sites, dict):
-            target = sites.get('@name') or sites.get('name')
+            target = sites.get('@name') or sites.get('name') or sites.get('host')
             if target and str(target).strip():
                 return str(target).strip()
 
+        # Check target or url at root
+        for root_key in ['target', 'target_url', 'targetUrl', 'url', 'host']:
+            if data.get(root_key) and isinstance(data[root_key], str):
+                return data[root_key].strip()
+
         # Check wrapper keys
-        for wrapper in ['report', 'OWASPZAPReport', 'zapReport']:
+        for wrapper in ['report', 'OWASPZAPReport', 'zapReport', 'Report']:
             if wrapper in data and isinstance(data[wrapper], dict):
                 res = self.extract_target_url(data[wrapper])
                 if res:
                     return res
+
+        # Fallback: extract from first alert's URL if available
+        alerts = self._extract_alerts(data)
+        if alerts and isinstance(alerts, list) and isinstance(alerts[0], dict):
+            first_url = alerts[0].get('url') or alerts[0].get('uri')
+            if first_url and str(first_url).startswith('http'):
+                try:
+                    from urllib.parse import urlparse
+                    p = urlparse(first_url)
+                    return f"{p.scheme}://{p.netloc}"
+                except Exception:
+                    pass
 
         return None
 
@@ -113,8 +132,8 @@ class ZAPParser:
                 continue
             try:
                 finding = self._normalize_alert(alert)
-                # Deduplicate by name + url + parameter
-                key = (finding.name.lower(), finding.url, finding.parameter)
+                # Deduplicate by name + url + parameter + plugin_id
+                key = (finding.name.lower(), finding.url.lower(), finding.parameter.lower(), finding.plugin_id)
                 if key not in seen:
                     seen.add(key)
                     findings.append(finding)
@@ -125,139 +144,180 @@ class ZAPParser:
         return findings
 
     def _extract_alerts(self, data: Any) -> list[dict]:
-        """Extract alerts from various ZAP JSON structures."""
+        """
+        Universal alert extractor supporting:
+        - ZAP Traditional JSON: site[].alerts[]
+        - ZAP XML-to-JSON: site.alerts.alertitem[] or site.alerts.alert[]
+        - ZAP API format: alerts[]
+        - Generic security reports: findings[], vulnerabilities[], issues[], results[]
+        - Flat list of alerts
+        """
         if isinstance(data, list):
             alerts = []
             for item in data:
                 if isinstance(item, dict):
-                    if 'alerts' in item:
-                        sub = item.get('alerts', [])
-                        alerts.extend(sub if isinstance(sub, list) else [sub])
-                    elif 'alert' in item or 'name' in item or 'pluginId' in item:
+                    # Check if this item is a container of alerts
+                    if any(k in item for k in ['alerts', 'findings', 'vulnerabilities', 'issues', 'alertitem']):
+                        sub = self._extract_alerts(item)
+                        alerts.extend(sub)
+                    elif any(k in item for k in ['alert', 'name', 'title', 'pluginId', 'risk', 'severity', 'vulnerability']):
                         alerts.append(item)
             return alerts if alerts else [x for x in data if isinstance(x, dict)]
 
         if not isinstance(data, dict):
             return []
 
-        # If wrapped in "report" or "OWASPZAPReport"
-        for wrapper_key in ['report', 'OWASPZAPReport', 'zapReport']:
-            if wrapper_key in data and isinstance(data[wrapper_key], dict):
-                data = data[wrapper_key]
+        # Check common top-level wrapper keys
+        for wrapper_key in ['report', 'OWASPZAPReport', 'zapReport', 'Report', 'scan', 'data']:
+            if wrapper_key in data and isinstance(data[wrapper_key], (dict, list)):
+                res = self._extract_alerts(data[wrapper_key])
+                if res:
+                    return res
 
-        # Standard ZAP report format: { "site": [ { "alerts": [...] } ] }
-        if 'site' in data:
+        # 1. ZAP format: site (list or dict)
+        sites = data.get('site') or data.get('sites')
+        if sites:
             alerts = []
-            sites = data['site']
-            if isinstance(sites, list):
-                for site in sites:
-                    if isinstance(site, dict):
-                        site_alerts = site.get('alerts', [])
-                        if isinstance(site_alerts, list):
-                            alerts.extend(site_alerts)
-                        elif isinstance(site_alerts, dict):
-                            alerts.append(site_alerts)
-            elif isinstance(sites, dict):
-                site_alerts = sites.get('alerts', [])
-                if isinstance(site_alerts, list):
-                    alerts.extend(site_alerts)
-                elif isinstance(site_alerts, dict):
-                    alerts.append(site_alerts)
-            return alerts
+            site_list = sites if isinstance(sites, list) else [sites]
+            for s in site_list:
+                if not isinstance(s, dict):
+                    continue
+                s_alerts = s.get('alerts') or s.get('alert') or s.get('findings')
+                if isinstance(s_alerts, list):
+                    alerts.extend(s_alerts)
+                elif isinstance(s_alerts, dict):
+                    # XML-to-JSON conversions often wrap items in alertitem or alert
+                    if 'alertitem' in s_alerts and isinstance(s_alerts['alertitem'], list):
+                        alerts.extend(s_alerts['alertitem'])
+                    elif 'alert' in s_alerts and isinstance(s_alerts['alert'], list):
+                        alerts.extend(s_alerts['alert'])
+                    elif 'item' in s_alerts and isinstance(s_alerts['item'], list):
+                        alerts.extend(s_alerts['item'])
+                    else:
+                        alerts.append(s_alerts)
+            if alerts:
+                return alerts
 
-        # Alternative: { "alerts": [...] }
-        if 'alerts' in data:
-            al = data['alerts']
-            return al if isinstance(al, list) else [al] if isinstance(al, dict) else []
+        # 2. Check top-level lists
+        for key in ['alerts', 'findings', 'vulnerabilities', 'issues', 'results', 'items', 'rules']:
+            if key in data:
+                val = data[key]
+                if isinstance(val, list):
+                    return val
+                elif isinstance(val, dict):
+                    if 'alertitem' in val and isinstance(val['alertitem'], list):
+                        return val['alertitem']
+                    elif 'alert' in val and isinstance(val['alert'], list):
+                        return val['alert']
+                    return [val]
 
-        # Alternative: dictionary with alerts somewhere inside
+        # 3. Search any key that contains a list of vulnerability dicts
         for key, val in data.items():
-            if isinstance(val, list) and val and isinstance(val[0], dict) and ('alert' in val[0] or 'name' in val[0] or 'pluginId' in val[0]):
-                return val
+            if isinstance(val, list) and val and isinstance(val[0], dict):
+                first = val[0]
+                if any(k in first for k in ['alert', 'name', 'title', 'pluginId', 'risk', 'severity', 'cweid', 'url', 'uri', 'vulnerability']):
+                    return val
 
-        if 'alert' in data or 'name' in data or 'pluginId' in data:
+        # 4. Single root alert dictionary
+        if any(k in data for k in ['alert', 'name', 'pluginId', 'risk', 'severity', 'vulnerability']):
             return [data]
 
-        logger.warning("Could not locate alerts array in ZAP report")
+        logger.warning("Could not locate alerts array in report")
         return []
 
     def _normalize_alert(self, alert: dict) -> NormalizedFinding:
-        """Normalize a single ZAP alert dict."""
+        """Normalize a single alert dict into standard NormalizedFinding schema."""
+        # 1. Vulnerability Name
         name = (
             alert.get('alert') or
             alert.get('name') or
-            alert.get('pluginId', 'Unknown Finding')
+            alert.get('title') or
+            alert.get('vulnerability') or
+            alert.get('rule_name') or
+            alert.get('pluginId') or
+            'Unknown Vulnerability'
         )
-        if not name:
-            name = 'Unknown Finding'
+        if isinstance(name, (list, dict)):
+            name = str(alert.get('name') or alert.get('title') or alert.get('alert') or 'Security Finding')
 
-        # Severity
-        riskcode = str(alert.get('riskcode', '')).strip()
-        risk_raw = str(alert.get('risk', alert.get('riskdesc', alert.get('riskDesc', '')))).lower()
+        # 2. Severity Classification
+        riskcode = str(alert.get('riskcode', alert.get('risk_code', ''))).strip()
+        risk_raw = str(alert.get('risk', alert.get('riskdesc', alert.get('riskDesc', alert.get('severity', alert.get('level', '')))))).lower().strip()
 
-        if riskcode == '4':
+        if riskcode == '4' or 'critical' in risk_raw:
             severity = 'Critical'
-        elif riskcode == '3':
+        elif riskcode == '3' or 'high' in risk_raw:
             severity = 'High'
-        elif riskcode == '2':
+        elif riskcode == '2' or 'medium' in risk_raw or 'moderate' in risk_raw or 'warn' in risk_raw:
             severity = 'Medium'
-        elif riskcode == '1':
+        elif riskcode == '1' or 'low' in risk_raw:
             severity = 'Low'
-        elif riskcode == '0':
+        elif riskcode == '0' or 'informational' in risk_raw or 'info' in risk_raw or 'false positive' in risk_raw:
             severity = 'Informational'
-        elif 'critical' in risk_raw:
-            severity = 'Critical'
-        elif 'high' in risk_raw:
-            severity = 'High'
-        elif 'medium' in risk_raw or 'moderate' in risk_raw:
-            severity = 'Medium'
-        elif 'informational' in risk_raw or 'info' in risk_raw or 'false positive' in risk_raw:
-            severity = 'Informational'
-        elif 'low' in risk_raw:
-            severity = 'Low'
         else:
-            severity = 'Low'
+            # Fallback based on CVSS or default
+            try:
+                cvss = float(alert.get('cvss', alert.get('cvss_score', alert.get('score', -1))))
+                if cvss >= 9.0: severity = 'Critical'
+                elif cvss >= 7.0: severity = 'High'
+                elif cvss >= 4.0: severity = 'Medium'
+                else: severity = 'Low'
+            except (ValueError, TypeError):
+                severity = 'High' if any(w in str(name).lower() for w in ['injection', 'rce', 'overflow', 'bypass']) else 'Medium'
 
-        # Confidence
+        # 3. Confidence
         conf_raw = str(alert.get('confidence', alert.get('confidenceDesc', '2'))).lower()
         confidence = CONFIDENCE_MAP.get(conf_raw, 'Medium')
 
-        # URL / method / parameter from instances or direct fields
-        instances = alert.get('instances', [])
-        if instances and isinstance(instances, list) and len(instances) > 0:
-            first = instances[0]
-            url = first.get('uri', first.get('url', ''))
-            method = first.get('method', 'GET')
-            parameter = first.get('param', first.get('parameter', ''))
-            evidence = first.get('evidence', first.get('attack', ''))
-        else:
-            url = alert.get('url', alert.get('uri', ''))
-            method = alert.get('method', 'GET')
-            parameter = alert.get('param', alert.get('parameter', ''))
-            evidence = alert.get('evidence', alert.get('attack', ''))
+        # 4. Instances / Endpoint / Parameter / Evidence
+        instances = alert.get('instances', alert.get('occurrences', []))
+        if isinstance(instances, dict):
+            instances = instances.get('instance') or [instances]
 
-        # CWE
-        cwe_raw = alert.get('cweid', alert.get('cweId', alert.get('cwe', '')))
-        if cwe_raw and str(cwe_raw) not in ('', '-1', '0'):
-            cwe_id = f"CWE-{cwe_raw}"
+        url = ''
+        method = 'GET'
+        parameter = ''
+        evidence = ''
+
+        if isinstance(instances, list) and len(instances) > 0 and isinstance(instances[0], dict):
+            first = instances[0]
+            url = first.get('uri') or first.get('url') or ''
+            method = first.get('method') or 'GET'
+            parameter = first.get('param') or first.get('parameter') or ''
+            evidence = first.get('evidence') or first.get('attack') or first.get('payload') or ''
+
+        if not url:
+            url = alert.get('url') or alert.get('uri') or alert.get('host') or alert.get('endpoint') or ''
+        if not parameter:
+            parameter = alert.get('param') or alert.get('parameter') or alert.get('input') or ''
+        if not evidence:
+            evidence = alert.get('evidence') or alert.get('attack') or alert.get('payload') or ''
+        if not method or method == 'GET':
+            method = alert.get('method') or 'GET'
+
+        # 5. CWE Classification
+        cwe_raw = alert.get('cweid') or alert.get('cweId') or alert.get('cwe') or alert.get('cwe_id') or ''
+        if cwe_raw and str(cwe_raw).strip() not in ('', '-1', '0', 'None', 'null'):
+            cwe_clean = str(cwe_raw).replace('CWE-', '').strip()
+            cwe_id = f"CWE-{cwe_clean}"
         else:
             cwe_id = 'N/A'
 
         return NormalizedFinding(
             name=str(name).strip(),
-            description=str(alert.get('desc', alert.get('description', ''))).strip(),
+            description=str(alert.get('desc') or alert.get('description') or alert.get('detail') or alert.get('summary') or '').strip(),
             severity=severity,
             confidence=confidence,
             url=str(url).strip(),
             method=str(method).upper().strip() or 'GET',
             parameter=str(parameter).strip(),
             evidence=str(evidence).strip(),
-            solution=str(alert.get('solution', '')).strip(),
-            reference=str(alert.get('reference', '')).strip(),
+            solution=str(alert.get('solution') or alert.get('remediation') or alert.get('recommendation') or '').strip(),
+            reference=str(alert.get('reference') or alert.get('references') or '').strip(),
             cwe_id=cwe_id,
-            plugin_id=str(alert.get('pluginid', alert.get('pluginId', ''))).strip(),
-            alert_ref=str(alert.get('alertRef', alert.get('alert_ref', ''))).strip(),
-            instances=instances,
+            plugin_id=str(alert.get('pluginid') or alert.get('pluginId') or alert.get('id') or '').strip(),
+            alert_ref=str(alert.get('alertRef') or alert.get('alert_ref') or '').strip(),
+            instances=instances if isinstance(instances, list) else [],
         )
 
 
