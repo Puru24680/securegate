@@ -64,9 +64,38 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
     try {
       setLoading(true);
       setError(null);
-      const scan = await api.uploadScanFile(file, selectedProjectId, targetUrl);
-      onScanCompleted(scan);
-      onClose();
+
+      // Validate JSON in browser
+      let parsedReport: any = null;
+      try {
+        const fileText = await file.text();
+        parsedReport = JSON.parse(fileText);
+      } catch (jsonErr: any) {
+        setError(`Invalid JSON file: ${jsonErr.message}. Make sure the exported report is in JSON format.`);
+        setLoading(false);
+        return;
+      }
+
+      const effectiveProjectId = selectedProjectId || (projects[0]?.id ?? 1);
+
+      // Try clean JSON payload first (most reliable across serverless/Vercel)
+      try {
+        const scan = await api.uploadScanReport({
+          project_id: effectiveProjectId,
+          report: parsedReport,
+          target_url: targetUrl || 'http://localhost:3000',
+        });
+        onScanCompleted(scan);
+        onClose();
+        return;
+      } catch (jsonUploadErr: any) {
+        // Fallback to multipart file upload
+        console.warn('JSON upload failed, trying multipart:', jsonUploadErr);
+        const scan = await api.uploadScanFile(file, effectiveProjectId, targetUrl);
+        onScanCompleted(scan);
+        onClose();
+        return;
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to parse and upload ZAP scan.');
     } finally {

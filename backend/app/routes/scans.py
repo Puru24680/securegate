@@ -93,7 +93,16 @@ def upload_scan_report():
         target_url = request.form.get('target_url')
         scan_identifier = request.form.get('scan_identifier')
         try:
-            raw_content = file.read().decode('utf-8')
+            raw_bytes = file.read()
+            raw_content = None
+            for enc in ['utf-8-sig', 'utf-8', 'latin-1']:
+                try:
+                    raw_content = raw_bytes.decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if not raw_content:
+                raw_content = raw_bytes.decode('utf-8', errors='ignore')
             raw_data = json.loads(raw_content)
         except Exception as e:
             return jsonify({"status": "error", "message": f"Invalid JSON file: {str(e)}"}), 400

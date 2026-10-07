@@ -102,7 +102,7 @@ export const api = {
   uploadScanFile: async (file: File, projectId: number, targetUrl?: string) => {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('project_id', projectId.toString());
+    formData.append('project_id', (projectId || 1).toString());
     if (targetUrl) formData.append('target_url', targetUrl);
 
     const response = await fetch(`${API_BASE}/scans/upload`, {
@@ -111,8 +111,21 @@ export const api = {
     });
 
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'File upload failed');
+      let errorMsg = `File upload failed (HTTP ${response.status})`;
+      try {
+        const err = await response.json();
+        if (err.message) errorMsg = err.message;
+      } catch {
+        try {
+          const txt = await response.text();
+          if (txt.includes('FUNCTION_PAYLOAD_TOO_LARGE') || response.status === 413) {
+            errorMsg = 'Scan file exceeds server upload size limit (max 4.5MB).';
+          } else if (txt) {
+            errorMsg = txt.slice(0, 120);
+          }
+        } catch {}
+      }
+      throw new Error(errorMsg);
     }
     const data = await response.json();
     return data.scan as Scan;

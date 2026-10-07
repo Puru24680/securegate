@@ -67,16 +67,18 @@ class ZAPParser:
                 data = json.loads(raw_data)
             except (json.JSONDecodeError, ValueError) as e:
                 raise ValueError(f"Invalid JSON: {e}")
-        elif isinstance(raw_data, dict):
+        elif isinstance(raw_data, (dict, list)):
             data = raw_data
         else:
-            raise ValueError("Input must be a JSON string or dict")
+            raise ValueError(f"Input must be a JSON string, dict, or list, got {type(raw_data).__name__}")
 
         alerts = self._extract_alerts(data)
         findings = []
         seen = set()
 
         for alert in alerts:
+            if not isinstance(alert, dict):
+                continue
             try:
                 finding = self._normalize_alert(alert)
                 # Deduplicate by name + url + parameter
@@ -90,34 +92,62 @@ class ZAPParser:
 
         return findings
 
-    def _extract_alerts(self, data: dict) -> list[dict]:
+    def _extract_alerts(self, data: Any) -> list[dict]:
         """Extract alerts from various ZAP JSON structures."""
+        if isinstance(data, list):
+            alerts = []
+            for item in data:
+                if isinstance(item, dict):
+                    if 'alerts' in item:
+                        sub = item.get('alerts', [])
+                        alerts.extend(sub if isinstance(sub, list) else [sub])
+                    elif 'alert' in item or 'name' in item or 'pluginId' in item:
+                        alerts.append(item)
+            return alerts if alerts else [x for x in data if isinstance(x, dict)]
+
+        if not isinstance(data, dict):
+            return []
+
+        # If wrapped in "report" or "OWASPZAPReport"
+        for wrapper_key in ['report', 'OWASPZAPReport', 'zapReport']:
+            if wrapper_key in data and isinstance(data[wrapper_key], dict):
+                data = data[wrapper_key]
+
         # Standard ZAP report format: { "site": [ { "alerts": [...] } ] }
         if 'site' in data:
             alerts = []
             sites = data['site']
             if isinstance(sites, list):
                 for site in sites:
-                    alerts.extend(site.get('alerts', []))
+                    if isinstance(site, dict):
+                        site_alerts = site.get('alerts', [])
+                        if isinstance(site_alerts, list):
+                            alerts.extend(site_alerts)
+                        elif isinstance(site_alerts, dict):
+                            alerts.append(site_alerts)
             elif isinstance(sites, dict):
-                alerts.extend(sites.get('alerts', []))
+                site_alerts = sites.get('alerts', [])
+                if isinstance(site_alerts, list):
+                    alerts.extend(site_alerts)
+                elif isinstance(site_alerts, dict):
+                    alerts.append(site_alerts)
             return alerts
 
         # Alternative: { "alerts": [...] }
         if 'alerts' in data:
-            return data['alerts']
+            al = data['alerts']
+            return al if isinstance(al, list) else [al] if isinstance(al, dict) else []
 
-        # Alternative: root is a list
-        if isinstance(data, list):
-            return data
+        # Alternative: dictionary with alerts somewhere inside
+        for key, val in data.items():
+            if isinstance(val, list) and val and isinstance(val[0], dict) and ('alert' in val[0] or 'name' in val[0] or 'pluginId' in val[0]):
+                return val
 
-        # Alternative: { "@version": ..., "site": ... }
-        for key in data:
-            if isinstance(data[key], list) and data[key] and 'alert' in data[key][0]:
-                return data[key]
+        if 'alert' in data or 'name' in data or 'pluginId' in data:
+            return [data]
 
-        logger.warning("Could not locate alerts array in ZAP report — trying root dict")
-        return [data] if 'alert' in data or 'name' in data else []
+        logger.warning("Could not locate alerts array in ZAP report")
+        return []
 
     def _normalize_alert(self, alert: dict) -> NormalizedFinding:
         """Normalize a single ZAP alert dict."""
