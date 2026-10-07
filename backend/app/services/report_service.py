@@ -64,25 +64,65 @@ class ReportService:
                 f"the application artifact meets compliance and production safety baselines."
             )
 
-        # Strategic recommendations
+        # Strategic recommendations built dynamically from actual findings in the scan
         recommendations = []
-        if scan.critical_count > 0 or scan.high_count > 0:
+        seen_rec_names = set()
+
+        # Prioritize Critical & High findings
+        for f in findings:
+            if f.severity in ('Critical', 'High') and f.name not in seen_rec_names:
+                seen_rec_names.add(f.name)
+                details = f.solution if f.solution else (
+                    f"Remediate {f.name} on affected endpoint {f.url}. Implement input validation, parameterized queries, and defensive access controls."
+                )
+                cat_label = f"{f.owasp_category} / {f.cwe_id}" if f.cwe_id != "N/A" else f.owasp_category
+                recommendations.append({
+                    "priority": "P0 - Immediate Blocker",
+                    "focus": f"Remediate {f.name} ({cat_label})",
+                    "details": details
+                })
+                if len(recommendations) >= 4:
+                    break
+
+        # Then Medium findings
+        if len(recommendations) < 4:
+            for f in findings:
+                if f.severity == 'Medium' and f.name not in seen_rec_names:
+                    seen_rec_names.add(f.name)
+                    details = f.solution if f.solution else (
+                        f"Review and harden configurations for {f.name} on endpoint {f.url}."
+                    )
+                    cat_label = f.cwe_id if f.cwe_id != "N/A" else f.owasp_category
+                    recommendations.append({
+                        "priority": "P1 - Pre-Release Review",
+                        "focus": f"Harden {f.name} ({cat_label})",
+                        "details": details
+                    })
+                    if len(recommendations) >= 4:
+                        break
+
+        # Then Low / Informational findings
+        if len(recommendations) < 3:
+            for f in findings:
+                if f.severity in ('Low', 'Informational') and f.name not in seen_rec_names:
+                    seen_rec_names.add(f.name)
+                    details = f.solution if f.solution else (
+                        f"Address {f.name} as part of continuous security maintenance."
+                    )
+                    recommendations.append({
+                        "priority": "P2 - Continuous Hygiene",
+                        "focus": f"Mitigate {f.name}",
+                        "details": details
+                    })
+                    if len(recommendations) >= 3:
+                        break
+
+        # If zero findings detected:
+        if not recommendations:
             recommendations.append({
-                "priority": "P0 - Immediate Blocker",
-                "focus": "Remediate High & Critical Injection and Access Control flaws",
-                "details": "Address SQL injection, XSS, and authorization boundaries using parameterized ORMs and strict input sanitization."
-            })
-        if scan.medium_count > 0:
-            recommendations.append({
-                "priority": "P1 - Pre-Release Review",
-                "focus": "Harden Security Headers and Configuration",
-                "details": "Enforce strict Content Security Policy (CSP), anti-clickjacking headers (X-Frame-Options), and cookie flags (HttpOnly, Secure, SameSite)."
-            })
-        if scan.low_count > 0 or scan.informational_count > 0:
-            recommendations.append({
-                "priority": "P2 - Continuous Hygiene",
-                "focus": "Suppress Information Leakage and Outdated Metadata",
-                "details": "Disable verbose server banner headers and ensure detailed stack traces are suppressed in production runtime environments."
+                "priority": "Verified Baseline",
+                "focus": "Zero Security Vulnerabilities Detected",
+                "details": "The target web application artifact has passed all automated pre-release security gating criteria with no actionable flaws detected."
             })
 
         return {
@@ -148,6 +188,14 @@ class ReportService:
                 </div>
                 """
             findings_html += "</div>"
+
+        if not findings_html:
+            findings_html = """
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 24px; text-align: center; color: #166534; margin: 12px 0;">
+                <strong style="font-size: 15px; display: block; margin-bottom: 4px;">Zero Security Flaws Detected</strong>
+                <span style="font-size: 13px; color: #15803d;">All pre-release security gating criteria satisfied. Artifact meets production compliance standards.</span>
+            </div>
+            """
 
         html_template = f"""<!DOCTYPE html>
 <html lang="en">

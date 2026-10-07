@@ -51,8 +51,8 @@ class ScanService:
             matching = Project.query.filter(Project.target_url == detected_target).first()
             if matching:
                 project = matching
-            elif project and project.name == "OWASP Juice Shop":
-                # Create dedicated project for this custom scanned website so it never overwrites Juice Shop
+            elif not project or project.target_url != detected_target:
+                # Create dedicated project for this custom scanned website so it never overwrites other targets
                 parsed = urlparse(detected_target)
                 hostname = parsed.netloc or parsed.path or "Custom Web Application"
                 new_proj = Project(

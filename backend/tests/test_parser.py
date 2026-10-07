@@ -162,3 +162,64 @@ def test_parse_flat_list_of_alerts():
     assert len(findings) == 1
     assert findings[0].name == "Remote Code Execution"
     assert findings[0].severity == "High"
+
+
+def test_zap_riskdesc_confidence_separation():
+    """Ensure confidence in riskdesc (e.g. 'Informational (Medium)') does not elevate severity."""
+    zap_report = {
+        "site": [
+            {
+                "@name": "https://my-custom-target.com",
+                "alerts": [
+                    {
+                        "alert": "Content-Cache Directives",
+                        "riskcode": "0",
+                        "riskdesc": "Informational (Medium)",
+                        "confidence": "2",
+                        "url": "https://my-custom-target.com/assets"
+                    },
+                    {
+                        "alert": "Cookie No HttpOnly Flag",
+                        "riskcode": "1",
+                        "riskdesc": "Low (High)",
+                        "confidence": "3",
+                        "url": "https://my-custom-target.com/login"
+                    },
+                    {
+                        "alert": "Missing Anti-clickjacking Header",
+                        "riskcode": "2",
+                        "riskdesc": "Medium (High)",
+                        "confidence": "3",
+                        "url": "https://my-custom-target.com/page"
+                    }
+                ]
+            }
+        ]
+    }
+    findings = zap_parser.parse(zap_report)
+    assert len(findings) == 3
+    assert findings[0].name == "Content-Cache Directives"
+    assert findings[0].severity == "Informational"  # NOT Medium
+    assert findings[0].confidence == "Medium"
+
+    assert findings[1].name == "Cookie No HttpOnly Flag"
+    assert findings[1].severity == "Low"  # NOT High
+    assert findings[1].confidence == "High"
+
+    assert findings[2].name == "Missing Anti-clickjacking Header"
+    assert findings[2].severity == "Medium"  # NOT High
+    assert findings[2].confidence == "High"
+
+
+def test_extract_target_url_flat_list():
+    """Ensure flat list of alerts extracts the host correctly without UnboundLocalError."""
+    flat_list = [
+        {
+            "alert": "SQL Injection",
+            "risk": "High",
+            "url": "https://secure-target.net/search?id=1"
+        }
+    ]
+    target = zap_parser.extract_target_url(flat_list)
+    assert target == "https://secure-target.net"
+

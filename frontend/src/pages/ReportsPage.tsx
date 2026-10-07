@@ -23,15 +23,32 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (initialScanId) {
+      setSelectedScanId(initialScanId);
+    }
+  }, [initialScanId]);
+
+  useEffect(() => {
     const loadScans = async () => {
       try {
+        setLoading(true);
         const data = await api.getScans(activeProjectId);
         setScans(data);
-        if (!selectedScanId && data.length > 0) {
-          setSelectedScanId(data[0].id);
+        if (data && data.length > 0) {
+          // If initialScanId is within this project's scans, keep it; otherwise default to latest
+          if (initialScanId && data.some((s) => s.id === initialScanId)) {
+            setSelectedScanId(initialScanId);
+          } else if (!selectedScanId || !data.some((s) => s.id === selectedScanId)) {
+            setSelectedScanId(data[0].id);
+          }
+        } else {
+          setSelectedScanId(null);
+          setReport(null);
         }
       } catch (err) {
         console.error('Failed to load scans:', err);
+      } finally {
+        setLoading(false);
       }
     };
     loadScans();
@@ -213,9 +230,18 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({
               4. Detailed findings
             </h3>
 
-            {['Critical', 'High', 'Medium', 'Low', 'Informational'].map((sev) => {
-              const findingsList = report.findings_by_severity[sev] || [];
-              if (findingsList.length === 0) return null;
+            {report.metrics.total_findings === 0 ? (
+              <div className="p-6 rounded-lg bg-emerald-50/60 border border-emerald-200/80 text-center space-y-1.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 mx-auto" />
+                <div className="text-xs font-semibold text-emerald-950">Zero Security Vulnerabilities Detected</div>
+                <p className="text-xs text-emerald-700">
+                  All pre-release security baseline checks passed successfully with 0 defects detected.
+                </p>
+              </div>
+            ) : (
+              ['Critical', 'High', 'Medium', 'Low', 'Informational'].map((sev) => {
+                const findingsList = report.findings_by_severity[sev] || [];
+                if (findingsList.length === 0) return null;
 
               return (
                 <div key={sev} className="space-y-2">
@@ -260,7 +286,8 @@ export const ReportsPage: React.FC<ReportsPageProps> = ({
                   </div>
                 </div>
               );
-            })}
+            })
+          )}
           </div>
 
           {/* Footer */}

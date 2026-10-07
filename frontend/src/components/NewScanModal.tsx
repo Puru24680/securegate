@@ -47,6 +47,43 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
 
   if (!isOpen) return null;
 
+  const detectTargetUrl = (json: any): string | null => {
+    if (!json) return null;
+    try {
+      if (Array.isArray(json) && json.length > 0) {
+        const first = json[0];
+        const url = first?.url || first?.uri || first?.target || first?.host || first?.['matched-at'];
+        if (url && typeof url === 'string' && url.trim().startsWith('http')) {
+          return new URL(url.trim()).origin;
+        }
+      } else if (typeof json === 'object') {
+        const sites = json.site || json.sites || json.report?.site;
+        if (Array.isArray(sites) && sites.length > 0) {
+          const t = sites[0]?.['@name'] || sites[0]?.name || sites[0]?.host;
+          if (t && typeof t === 'string' && t.trim()) return t.trim();
+        } else if (sites && typeof sites === 'object') {
+          const t = sites['@name'] || sites.name || sites.host;
+          if (t && typeof t === 'string' && t.trim()) return t.trim();
+        }
+        for (const k of ['target_url', 'targetUrl', 'target', 'url', 'host']) {
+          if (json[k] && typeof json[k] === 'string' && json[k].trim()) {
+            const u = json[k].trim();
+            return u.startsWith('http') ? new URL(u).origin : u;
+          }
+        }
+        const alerts = json.alerts || json.findings || json.vulnerabilities || json.issues || [];
+        if (Array.isArray(alerts) && alerts.length > 0) {
+          const first = alerts[0];
+          const u = first?.url || first?.uri || first?.instances?.[0]?.uri || first?.['matched-at'];
+          if (u && typeof u === 'string' && u.startsWith('http')) {
+            return new URL(u.trim()).origin;
+          }
+        }
+      }
+    } catch {}
+    return null;
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
@@ -57,10 +94,9 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
       try {
         const text = await selectedFile.text();
         const json = JSON.parse(text);
-        const sites = json.site || json.report?.site;
-        const target = Array.isArray(sites) ? (sites[0]?.['@name'] || sites[0]?.name) : sites?.['@name'];
-        if (target && typeof target === 'string' && target.trim()) {
-          setTargetUrl(target.trim());
+        const autoTarget = detectTargetUrl(json);
+        if (autoTarget) {
+          setTargetUrl(autoTarget);
         }
       } catch {}
     }
@@ -89,12 +125,8 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
       }
 
       // Detect target URL directly from report if available
-      let effectiveTarget = targetUrl;
-      const sites = parsedReport.site || parsedReport.report?.site;
-      const autoTarget = Array.isArray(sites) ? (sites[0]?.['@name'] || sites[0]?.name) : sites?.['@name'];
-      if (autoTarget && typeof autoTarget === 'string' && autoTarget.trim()) {
-        effectiveTarget = autoTarget.trim();
-      }
+      const autoTarget = detectTargetUrl(parsedReport);
+      const effectiveTarget = autoTarget || targetUrl;
 
       const effectiveProjectId = selectedProjectId || (projects[0]?.id ?? 1);
 
