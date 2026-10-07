@@ -3,13 +3,16 @@
 
 param(
     [string]$TargetUrl = "http://localhost:3000",
-    [string]$OutputFile = "reports\zap_juiceshop_scan.json"
+    [string]$OutputFilename = "zap_custom_scan.json"
 )
+
+$jsonName = [System.IO.Path]::GetFileNameWithoutExtension($OutputFilename) + ".json"
+$htmlName = [System.IO.Path]::GetFileNameWithoutExtension($OutputFilename) + ".html"
 
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host " SECUREGATE - OWASP ZAP Automated Scan Runner" -ForegroundColor Cyan
 Write-Host " Target URL: $TargetUrl" -ForegroundColor Yellow
-Write-Host " Output:     $OutputFile" -ForegroundColor Yellow
+Write-Host " Output:     reports\$jsonName" -ForegroundColor Yellow
 Write-Host "============================================================" -ForegroundColor Cyan
 
 # Check if target is responding
@@ -17,21 +20,23 @@ try {
     $response = Invoke-WebRequest -Uri $TargetUrl -UseBasicParsing -TimeoutSec 5
     Write-Host "[+] Target application is reachable at $TargetUrl (Status: $($response.StatusCode))" -ForegroundColor Green
 } catch {
-    Write-Host "[!] Warning: Target application at $TargetUrl may not be running yet." -ForegroundColor Yellow
-    Write-Host "    Make sure OWASP Juice Shop is running on port 3000." -ForegroundColor Yellow
+    Write-Host "[!] Warning: Target application at $TargetUrl may not be responding or timed out." -ForegroundColor Yellow
+    Write-Host "    Make sure the web application is running and accessible." -ForegroundColor Yellow
 }
 
-# Run ZAP container if Docker is available, or use standalone ZAP CLI
+# Run ZAP container if Docker is available
 if (Get-Command docker -ErrorAction SilentlyContinue) {
     Write-Host "[*] Launching OWASP ZAP container..." -ForegroundColor Cyan
     $absOutput = Resolve-Path "reports"
     docker run --user root --network host -v "${absOutput}:/zap/wrk/:rw" `
         zaproxy/zap-stable zap-baseline.py `
         -t $TargetUrl `
-        -J "zap_juiceshop_scan.json" `
-        -r "zap_juiceshop_scan.html"
-    Write-Host "[+] ZAP scan complete! Report saved to reports\zap_juiceshop_scan.json" -ForegroundColor Green
+        -J $jsonName `
+        -r $htmlName
+    Write-Host "[+] ZAP scan complete! Report saved to reports\$jsonName" -ForegroundColor Green
+    Write-Host "[+] You can now upload reports\$jsonName directly into SecureGate!" -ForegroundColor Green
 } else {
-    Write-Host "[!] Docker not detected on PATH. Using bundled sample Juice Shop ZAP report in reports\zap_juiceshop_scan.json" -ForegroundColor Yellow
-    Write-Host "    Judges can import reports\zap_juiceshop_scan.json directly in the SecureGate UI!" -ForegroundColor Green
+    Write-Host "[!] Docker not detected on PATH." -ForegroundColor Yellow
+    Write-Host "    To scan external/custom targets, install Docker or run the OWASP ZAP Desktop client." -ForegroundColor Yellow
+    Write-Host "    Once exported to JSON, upload the file directly into SecureGate." -ForegroundColor Cyan
 }

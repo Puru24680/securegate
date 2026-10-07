@@ -169,12 +169,12 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
                 className="p-3 text-left rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-slate-900">Juice Shop</span>
+                  <span className="text-xs font-semibold text-slate-900">Pre-Fix Build</span>
                   <span className="text-[10px] font-medium text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
                     Block
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500">SQLi & XSS findings</p>
+                <p className="text-[11px] text-slate-500">Raw target: SQLi & XSS</p>
               </button>
 
               <button
@@ -184,12 +184,12 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
                 className="p-3 text-left rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-slate-900">Staging build</span>
+                  <span className="text-xs font-semibold text-slate-900">Staging Build</span>
                   <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
                     Review
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500">Missing CSRF & headers</p>
+                <p className="text-[11px] text-slate-500">Partial fix: CSRF & headers</p>
               </button>
 
               <button
@@ -199,12 +199,12 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
                 className="p-3 text-left rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs font-semibold text-slate-900">Hardened build</span>
+                  <span className="text-xs font-semibold text-slate-900">Post-Fix Build</span>
                   <span className="text-[10px] font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
                     Pass
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500">Zero high findings</p>
+                <p className="text-[11px] text-slate-500">Remediated candidate: 0 high</p>
               </button>
             </div>
           </div>
