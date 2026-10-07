@@ -100,13 +100,19 @@ def upload_scan_report():
     else:
         return jsonify({"status": "error", "message": "No JSON payload or file provided."}), 400
 
-    if not project_id:
+    if not project_id or not db.session.get(Project, project_id):
         # Default to first available project or create one
         proj = Project.query.first()
-        if proj:
-            project_id = proj.id
-        else:
-            return jsonify({"status": "error", "message": "No project exists. Create a project first."}), 400
+        if not proj:
+            proj = Project(
+                name="OWASP Juice Shop",
+                target_url=target_url or "http://localhost:3000",
+                description="Default web application target for pre-release security gating.",
+                is_demo=True
+            )
+            db.session.add(proj)
+            db.session.commit()
+        project_id = proj.id
 
     try:
         scan = scan_service.process_zap_report(
@@ -140,12 +146,18 @@ def simulate_preset():
     preset = payload.get('preset', 'juiceshop')
     project_id = payload.get('project_id')
 
-    if not project_id:
+    if not project_id or not db.session.get(Project, project_id):
         proj = Project.query.first()
-        if proj:
-            project_id = proj.id
-        else:
-            return jsonify({"status": "error", "message": "No project exists."}), 400
+        if not proj:
+            proj = Project(
+                name="OWASP Juice Shop",
+                target_url="http://localhost:3000",
+                description="Default web application target for pre-release security gating.",
+                is_demo=True
+            )
+            db.session.add(proj)
+            db.session.commit()
+        project_id = proj.id
 
     filename_map = {
         'juiceshop': 'zap_juiceshop_scan.json',

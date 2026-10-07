@@ -11,6 +11,7 @@ def init_db(app):
     """Initialize database and create tables."""
     db.create_all()
     _seed_default_settings()
+    _seed_default_project()
 
 
 def _seed_default_settings():
@@ -27,6 +28,19 @@ def _seed_default_settings():
             ci_cd_provider='github_actions',
         )
         db.session.add(defaults)
+        db.session.commit()
+
+
+def _seed_default_project():
+    """Ensure at least one default project exists."""
+    if not Project.query.first():
+        p = Project(
+            name="OWASP Juice Shop",
+            target_url="http://localhost:3000",
+            description="Default web application target for pre-release security gating.",
+            is_demo=True
+        )
+        db.session.add(p)
         db.session.commit()
 
 

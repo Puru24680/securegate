@@ -29,9 +29,18 @@ class ScanService:
         Parses a ZAP JSON report, enriches findings, stores models,
         calculates security score and evaluates the release gate.
         """
-        project = db.session.get(Project, project_id)
+        project = db.session.get(Project, project_id) if project_id else None
         if not project:
-            raise ValueError(f"Project with ID {project_id} not found.")
+            project = Project.query.first()
+        if not project:
+            project = Project(
+                name="OWASP Juice Shop",
+                target_url=target_url or "http://localhost:3000",
+                description="Default web application target for pre-release security gating.",
+                is_demo=True
+            )
+            db.session.add(project)
+            db.session.commit()
 
         # Parse alerts from ZAP JSON
         raw_findings = zap_parser.parse(raw_report_data)

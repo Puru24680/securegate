@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Project, Scan } from '../types';
 import { api } from '../services/api';
 import {
@@ -31,6 +31,15 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number>(
     activeProjectId || (projects[0]?.id ?? 1)
   );
+
+  useEffect(() => {
+    if (activeProjectId) {
+      setSelectedProjectId(activeProjectId);
+    } else if (projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [activeProjectId, projects, isOpen]);
+
   const [targetUrl, setTargetUrl] = useState('http://localhost:3000');
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
