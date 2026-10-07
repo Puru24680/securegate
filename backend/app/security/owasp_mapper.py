@@ -109,6 +109,16 @@ CWE_TO_OWASP = {
     '200': ('A05:2021 - Security Misconfiguration', 'CWE-200'),   # Info Disclosure
     '209': ('A05:2021 - Security Misconfiguration', 'CWE-209'),   # Error info in response
     '778': ('A09:2021 - Security Logging and Monitoring Failures', 'CWE-778'),
+    '98': ('A03:2021 - Injection', 'CWE-98'),                     # Remote File Inclusion (RFI)
+    '601': ('A01:2021 - Broken Access Control', 'CWE-601'),       # Open / External Redirect
+    '94': ('A03:2021 - Injection', 'CWE-94'),                     # Code Injection / SSTI
+    '611': ('A05:2021 - Security Misconfiguration', 'CWE-611'),   # XXE
+    '97': ('A03:2021 - Injection', 'CWE-97'),                     # SSI Injection
+    '120': ('A06:2021 - Vulnerable and Outdated Components', 'CWE-120'), # Buffer Overflow
+    '134': ('A03:2021 - Injection', 'CWE-134'),                   # Format String
+    '538': ('A01:2021 - Broken Access Control', 'CWE-538'),       # File Disclosure
+    '548': ('A01:2021 - Broken Access Control', 'CWE-548'),       # Directory Listing
+    '472': ('A04:2021 - Insecure Design', 'CWE-472'),             # Parameter Tampering
 }
 
 

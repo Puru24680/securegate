@@ -9,6 +9,8 @@ import {
   SlidersHorizontal,
   CheckCircle2,
   XCircle,
+  Zap,
+  GitBranch,
 } from 'lucide-react';
 
 interface TopBarProps {
@@ -19,6 +21,7 @@ interface TopBarProps {
   onOpenNewScan: () => void;
   apiConnected: boolean;
   onTriggerPreset?: (preset: 'juiceshop' | 'clean' | 'medium') => void;
+  onNavigateTab?: (tab: string) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -29,6 +32,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenNewScan,
   apiConnected,
   onTriggerPreset,
+  onNavigateTab,
 }) => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showDemoMenu, setShowDemoMenu] = useState(false);
@@ -149,6 +153,30 @@ export const TopBar: React.FC<TopBarProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* Quick Access to ZAP Live Scanner */}
+        {onNavigateTab && (
+          <button
+            onClick={() => onNavigateTab('zap-scanner')}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-amber-200 bg-amber-50/70 hover:bg-amber-100 text-amber-800 text-xs font-medium transition-colors cursor-pointer"
+            title="Open OWASP ZAP Live Scanner Cockpit"
+          >
+            <Zap className="w-3.5 h-3.5 fill-current text-amber-600" />
+            <span>ZAP Scanner</span>
+          </button>
+        )}
+
+        {/* Quick Access to CI/CD & GitHub Actions */}
+        {onNavigateTab && (
+          <button
+            onClick={() => onNavigateTab('ci-cd')}
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-indigo-200 bg-indigo-50/70 hover:bg-indigo-100 text-indigo-800 text-xs font-medium transition-colors cursor-pointer"
+            title="Open CI/CD & GitHub Actions Integration"
+          >
+            <GitBranch className="w-3.5 h-3.5 text-indigo-600" />
+            <span>CI/CD</span>
+          </button>
         )}
 
         {/* Primary Import Scan Button */}

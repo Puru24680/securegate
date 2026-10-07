@@ -85,6 +85,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           onOpenNewScan={handleOpenModal}
           apiConnected={apiConnected}
           onTriggerPreset={handlePreset}
+          onNavigateTab={onSelectTab}
         />
 
         {/* Scrollable Page Body */}

@@ -11,6 +11,7 @@ import {
   Play,
   CheckCircle2,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 
 interface NewScanModalProps {
@@ -69,6 +70,25 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
           if (json[k] && typeof json[k] === 'string' && json[k].trim()) {
             const u = json[k].trim();
             return u.startsWith('http') ? new URL(u).origin : u;
+          }
+        }
+        // Check domains array if present
+        if (Array.isArray(json.domains) && json.domains.length > 0 && typeof json.domains[0] === 'string') {
+          const d = json.domains[0].trim();
+          if (d) return d.startsWith('http') ? d : `https://${d}`;
+        }
+        // Check logFile or log text
+        const log = json.logFile || json.log || json.output;
+        if (typeof log === 'string' && log) {
+          const match = log.match(/Attacking\s+(https?:\/\/[^\s\r\n]+)/i) ||
+                        log.match(/completed host\s+(https?:\/\/[^\s\r\n]+)/i) ||
+                        log.match(/completed host\/plugin\s+(https?:\/\/[^\s|]+)/i);
+          if (match && match[1]) {
+            try {
+              return new URL(match[1].trim()).origin;
+            } catch {
+              return match[1].trim();
+            }
           }
         }
         const alerts = json.alerts || json.findings || json.vulnerabilities || json.issues || [];
@@ -290,10 +310,23 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
             </div>
           </div>
 
+          {/* Live ZAP Scanner CTA */}
+          <div className="p-3.5 rounded-xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-700 flex-shrink-0">
+                <Zap className="w-4 h-4 fill-current" />
+              </div>
+              <div>
+                <span className="text-xs font-semibold text-amber-900 block">Want to scan a live target website?</span>
+                <span className="text-[11px] text-amber-700">Use our OWASP ZAP API Scanner tab to execute active dynamic scans.</span>
+              </div>
+            </div>
+          </div>
+
           {/* Upload Custom JSON */}
           <form onSubmit={handleCustomUpload} className="space-y-3 pt-3 border-t border-slate-100">
             <label className="text-xs font-medium text-slate-700 block">
-              Or upload OWASP ZAP JSON file
+              Upload OWASP ZAP JSON or Automation Framework file
             </label>
             <div className="relative border border-dashed border-slate-200 hover:border-slate-300 rounded-lg p-5 text-center cursor-pointer bg-slate-50 hover:bg-white transition-colors">
               <input

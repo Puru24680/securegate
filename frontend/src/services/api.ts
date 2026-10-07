@@ -228,4 +228,69 @@ export const api = {
     });
     return res.result;
   },
+
+  // OWASP ZAP API Daemon Integration
+  getZapHealth: async (zapUrl?: string, apiKey?: string) => {
+    const params = new URLSearchParams();
+    if (zapUrl) params.append('zap_url', zapUrl);
+    if (apiKey) params.append('api_key', apiKey);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return request<{
+      status: string;
+      daemon: {
+        connected: boolean;
+        version: string | null;
+        url: string;
+        latency_ms: number | null;
+        error: string | null;
+      };
+    }>(`/zap/health${query}`);
+  },
+
+  startZapScan: async (payload: {
+    target_url: string;
+    project_id?: number;
+    scan_type?: string;
+    zap_url?: string;
+    api_key?: string;
+    simulate?: boolean;
+  }) => {
+    return request<{
+      status: string;
+      message: string;
+      task_id: string;
+      target_url: string;
+    }>('/zap/scan', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getZapTaskStatus: async (taskId: string) => {
+    return request<{
+      status: string;
+      task: {
+        id: string;
+        target_url: string;
+        stage: string;
+        progress: number;
+        status: string;
+        logs: string[];
+        scan_id: number | null;
+        error: string | null;
+        scan?: Scan;
+      };
+    }>(`/zap/tasks/${taskId}`);
+  },
+
+  getZapQuickstart: async () => {
+    return request<{
+      status: string;
+      docker_command: string;
+      cli_command: string;
+      default_url: string;
+      documentation: string;
+    }>('/zap/quickstart');
+  },
 };
+

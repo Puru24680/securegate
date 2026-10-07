@@ -4,10 +4,323 @@ Parses OWASP ZAP JSON reports into normalized Finding objects.
 """
 import json
 import logging
+import re
 from typing import Any
 from dataclasses import dataclass, field
 
 logger = logging.getLogger(__name__)
+
+# Master dictionary mapping ZAP ScanRules and plugins to rich finding metadata
+RULE_KNOWLEDGE_BASE = {
+    'SqlInjectionScanRule': {
+        'name': 'SQL Injection',
+        'severity': 'High',
+        'cwe': '89',
+        'desc': 'SQL injection vulnerability detected during active scan. Untrusted user parameters are concatenated directly into backend SQL queries without parameterization.',
+        'solution': 'Use parameterized queries, prepared statements, or an Object-Relational Mapper (ORM) with strict query binding.',
+    },
+    'CrossSiteScriptingScanRule': {
+        'name': 'Cross Site Scripting (XSS)',
+        'severity': 'High',
+        'cwe': '79',
+        'desc': 'Cross-site scripting (XSS) detected. User-controllable input is reflected into the DOM or response without contextual output encoding.',
+        'solution': 'Contextually encode all user-controlled data before rendering into HTML. Implement a strict Content-Security-Policy (CSP).',
+    },
+    'CommandInjectionScanRule': {
+        'name': 'Remote OS Command Injection',
+        'severity': 'Critical',
+        'cwe': '78',
+        'desc': 'Operating system command injection flaw identified. Arbitrary shell commands can be executed on the server host via unvalidated input.',
+        'solution': 'Avoid passing user input to system shell execution functions. Use native programming language APIs with strict parameter lists.',
+    },
+    'CommandInjectionTimingScanRule': {
+        'name': 'Blind Remote OS Command Injection (Timing)',
+        'severity': 'Critical',
+        'cwe': '78',
+        'desc': 'Time-based blind command injection detected via delayed response times.',
+        'solution': 'Avoid passing user input to system shell execution functions. Use native programming language APIs.',
+    },
+    'PathTraversalScanRule': {
+        'name': 'Directory Browsing and Path Traversal',
+        'severity': 'High',
+        'cwe': '22',
+        'desc': 'Path traversal vulnerability detected. Attackers can navigate outside web directory root to access arbitrary files.',
+        'solution': 'Enforce canonical file path validation, use a whitelist of allowed files, and disallow directory traversal sequences.',
+    },
+    'RemoteFileIncludeScanRule': {
+        'name': 'Remote File Inclusion (RFI)',
+        'severity': 'High',
+        'cwe': '98',
+        'desc': 'Remote file inclusion vulnerability detected. The server retrieves and executes remote source code via untrusted input.',
+        'solution': 'Disable allow_url_include and avoid dynamic file inclusions based on user parameters.',
+    },
+    'ExternalRedirectScanRule': {
+        'name': 'Open Redirect (External Redirect)',
+        'severity': 'Medium',
+        'cwe': '601',
+        'desc': 'Open redirect vulnerability detected. Attackers can redirect users to arbitrary hostile external URLs.',
+        'solution': 'Avoid accepting target redirect URLs directly from user parameters, or restrict redirects to an explicit whitelist of relative paths.',
+    },
+    'ServerSideIncludeScanRule': {
+        'name': 'Server-Side Include (SSI) Injection',
+        'severity': 'High',
+        'cwe': '97',
+        'desc': 'Server-Side Include (SSI) directive injection vulnerability detected.',
+        'solution': 'Sanitize user inputs and disable SSI execution on untrusted user-submitted pages.',
+    },
+    'XpathInjectionScanRule': {
+        'name': 'XPath Injection',
+        'severity': 'High',
+        'cwe': '643',
+        'desc': 'XPath injection vulnerability identified in XML query parameters.',
+        'solution': 'Use parameterized XPath queries or precompiled XPath expressions with strict input sanitization.',
+    },
+    'XxeScanRule': {
+        'name': 'XML External Entity (XXE) Injection',
+        'severity': 'High',
+        'cwe': '611',
+        'desc': 'XML External Entity injection flaw detected in XML parser configuration.',
+        'solution': 'Disable external entity resolution (DTD / external entities) in all XML parser libraries.',
+    },
+    'SstiScanRule': {
+        'name': 'Server-Side Template Injection (SSTI)',
+        'severity': 'Critical',
+        'cwe': '94',
+        'desc': 'Server-Side Template Injection allows remote attackers to execute arbitrary code within the template engine context.',
+        'solution': 'Do not pass untrusted user input directly into template engines. Use logic-less templates or strict sandboxing.',
+    },
+    'SstiBlindScanRule': {
+        'name': 'Blind Server-Side Template Injection (SSTI)',
+        'severity': 'Critical',
+        'cwe': '94',
+        'desc': 'Blind template injection vulnerability detected via mathematical expression evaluation.',
+        'solution': 'Do not pass untrusted user input directly into template engines.',
+    },
+    'BufferOverflowScanRule': {
+        'name': 'Buffer Overflow',
+        'severity': 'Critical',
+        'cwe': '120',
+        'desc': 'Buffer overflow vulnerability detected. Can lead to service crash or arbitrary code execution.',
+        'solution': 'Use memory-safe languages or validate input boundaries to prevent memory buffer overflows.',
+    },
+    'FormatStringScanRule': {
+        'name': 'Format String Vulnerability',
+        'severity': 'High',
+        'cwe': '134',
+        'desc': 'Uncontrolled format string flaw detected in application logging or formatting logic.',
+        'solution': 'Always use constant format strings and pass user inputs as arguments rather than format formatters.',
+    },
+    'CrlfInjectionScanRule': {
+        'name': 'CRLF Injection / HTTP Response Splitting',
+        'severity': 'Medium',
+        'cwe': '93',
+        'desc': 'CRLF characters injected into response headers allow attackers to inject arbitrary headers or split HTTP responses.',
+        'solution': 'Strip carriage return (CR) and line feed (LF) characters from all user-controllable HTTP header values.',
+    },
+    'ParameterTamperScanRule': {
+        'name': 'Parameter Tampering',
+        'severity': 'Medium',
+        'cwe': '472',
+        'desc': 'Server logic relies on client-side state without server-side validation.',
+        'solution': 'Validate all parameters server-side and verify permissions on all state-changing operations.',
+    },
+    'HiddenFilesScanRule': {
+        'name': 'Sensitive Hidden Files or Directories Exposed',
+        'severity': 'Medium',
+        'cwe': '538',
+        'desc': 'Hidden configuration or backup files (e.g. .git, .env, .bak) are accessible to unauthenticated users.',
+        'solution': 'Configure web server rules to deny access to hidden files and backup extensions.',
+    },
+    'CodeInjectionScanRule': {
+        'name': 'Code Injection',
+        'severity': 'Critical',
+        'cwe': '94',
+        'desc': 'Direct code injection vulnerability allows execution of arbitrary code within server interpreter.',
+        'solution': 'Never pass untrusted user input to eval() or dynamic code execution functions.',
+    },
+    'PaddingOracleScanRule': {
+        'name': 'Padding Oracle Cryptographic Weakness',
+        'severity': 'High',
+        'cwe': '327',
+        'desc': 'Cryptographic padding oracle flaw enables attackers to decrypt ciphertext without the secret key.',
+        'solution': 'Use authenticated encryption modes (e.g. AES-GCM) with proper integrity checks.',
+    },
+    'CloudMetadataScanRule': {
+        'name': 'Cloud Metadata API SSRF Exposure',
+        'severity': 'Critical',
+        'cwe': '918',
+        'desc': 'Server-Side Request Forgery enables access to cloud provider instance metadata services (169.254.169.254).',
+        'solution': 'Enforce strict egress filtering and disable access to instance metadata endpoints.',
+    },
+    'DirectoryBrowsingScanRule': {
+        'name': 'Directory Browsing Enabled',
+        'severity': 'Medium',
+        'cwe': '548',
+        'desc': 'Web server directory indexing is enabled, exposing full directory structures and filenames.',
+        'solution': 'Disable directory listing in the web server configuration.',
+    },
+    'HtAccessScanRule': {
+        'name': 'Apache .htaccess Configuration File Exposed',
+        'severity': 'High',
+        'cwe': '538',
+        'desc': 'Server configuration file (.htaccess) is exposed to public web requests.',
+        'solution': 'Block access to .ht* files in web server configuration.',
+    },
+    'EnvFileScanRule': {
+        'name': 'Environment Configuration (.env) File Exposed',
+        'severity': 'Critical',
+        'cwe': '538',
+        'desc': 'Sensitive .env file containing database credentials and secret keys is publicly exposed.',
+        'solution': 'Restrict web server access to .env files and move sensitive secrets outside web root.',
+    },
+    'SpringActuatorScanRule': {
+        'name': 'Spring Boot Actuator Endpoints Exposed',
+        'severity': 'High',
+        'cwe': '200',
+        'desc': 'Sensitive Spring Boot actuator management endpoints are publicly exposed without authentication.',
+        'solution': 'Secure actuator endpoints behind authentication and disable unnecessary endpoints.',
+    },
+    'Spring4ShellScanRule': {
+        'name': 'Spring4Shell Remote Code Execution',
+        'severity': 'Critical',
+        'cwe': '94',
+        'desc': 'Spring4Shell (CVE-2022-22965) vulnerability allows remote code execution via class loader binding.',
+        'solution': 'Upgrade Spring Framework to version 5.3.18 / 5.2.20 or newer.',
+    },
+    'Log4ShellScanRule': {
+        'name': 'Log4Shell (CVE-2021-44228) JNDI RCE',
+        'severity': 'Critical',
+        'cwe': '502',
+        'desc': 'Log4Shell remote code execution vulnerability identified via JNDI lookup payloads.',
+        'solution': 'Upgrade Log4j to 2.17.1 or newer and set log4j2.formatMsgNoLookups=true.',
+    },
+    'ShellShockScanRule': {
+        'name': 'ShellShock (CVE-2014-6271) Bash Command Injection',
+        'severity': 'Critical',
+        'cwe': '78',
+        'desc': 'Bash Shellshock flaw permits remote command execution through forged environment headers.',
+        'solution': 'Update GNU Bash to a patched release.',
+    },
+    'HeartBleedActiveScanRule': {
+        'name': 'OpenSSL Heartbleed Vulnerability (CVE-2014-0160)',
+        'severity': 'Critical',
+        'cwe': '119',
+        'desc': 'Heartbleed memory disclosure flaw in OpenSSL allows dumping private memory content.',
+        'solution': 'Upgrade OpenSSL to a secure version.',
+    },
+    'PersistentXssScanRule': {
+        'name': 'Stored / Persistent Cross-Site Scripting',
+        'severity': 'High',
+        'cwe': '79',
+        'desc': 'Persistent XSS flaw detected. Hostile script payloads are permanently stored in database and served to users.',
+        'solution': 'Contextually encode all user-controlled data before rendering into HTML. Enforce strict CSP.',
+    },
+    'PersistentXssPrimeScanRule': {
+        'name': 'Stored Cross-Site Scripting Injection Point',
+        'severity': 'High',
+        'cwe': '79',
+        'desc': 'Stored XSS injection vector accepted by server form endpoint.',
+        'solution': 'Validate and sanitize input on server-side and contextually escape on output.',
+    },
+    'DomXssScanRule': {
+        'name': 'DOM-based Cross-Site Scripting',
+        'severity': 'High',
+        'cwe': '79',
+        'desc': 'Client-side DOM XSS flaw detected where untrusted data flows into a sink like innerHTML or eval.',
+        'solution': 'Avoid dangerous DOM sinks. Use safe APIs like textContent and sanitize HTML with DOMPurify.',
+    },
+    'SqlInjectionMySqlTimingScanRule': {
+        'name': 'MySQL Time-based Blind SQL Injection',
+        'severity': 'High',
+        'cwe': '89',
+        'desc': 'Time-based blind SQL injection flaw identified using MySQL sleep payloads.',
+        'solution': 'Refactor database queries to use parameterized prepared statements.',
+    },
+    'SqlInjectionOracleTimingScanRule': {
+        'name': 'Oracle Time-based Blind SQL Injection',
+        'severity': 'High',
+        'cwe': '89',
+        'desc': 'Time-based blind SQL injection flaw identified using Oracle delay payloads.',
+        'solution': 'Refactor database queries to use parameterized prepared statements.',
+    },
+    'SqlInjectionPostgreSqlTimingScanRule': {
+        'name': 'PostgreSQL Time-based Blind SQL Injection',
+        'severity': 'High',
+        'cwe': '89',
+        'desc': 'Time-based blind SQL injection flaw identified using PostgreSQL delay payloads.',
+        'solution': 'Refactor database queries to use parameterized prepared statements.',
+    },
+    'SqlInjectionMsSqlTimingScanRule': {
+        'name': 'Microsoft SQL Server Blind SQL Injection',
+        'severity': 'High',
+        'cwe': '89',
+        'desc': 'Time-based blind SQL injection flaw identified using MSSQL WAITFOR DELAY payloads.',
+        'solution': 'Refactor database queries to use parameterized prepared statements.',
+    },
+    'XsltInjectionScanRule': {
+        'name': 'XSLT Injection Vulnerability',
+        'severity': 'High',
+        'cwe': '91',
+        'desc': 'XSLT injection flaw allows arbitrary XSL transformations or server-side document reading.',
+        'solution': 'Disable insecure extensions and external entities in XSLT transformers.',
+    },
+    'SOAPActionSpoofingActiveScanRule': {
+        'name': 'SOAPAction Header Spoofing',
+        'severity': 'Medium',
+        'cwe': '284',
+        'desc': 'SOAP web service accepts mismatched SOAPAction headers, permitting authorization bypass.',
+        'solution': 'Assert that SOAPAction headers strictly match request payload operation names.',
+    },
+    'SOAPXMLInjectionActiveScanRule': {
+        'name': 'SOAP XML Injection',
+        'severity': 'High',
+        'cwe': '91',
+        'desc': 'XML injection flaw identified in SOAP web service request payload.',
+        'solution': 'Validate and schema-check all XML payloads before processing.',
+    },
+    'HttpOnlySiteScanRule': {
+        'name': 'Sensitive Cookies Missing HttpOnly Flag',
+        'severity': 'Low',
+        'cwe': '1004',
+        'desc': 'Session cookies missing HttpOnly flag, permitting script-based access.',
+        'solution': 'Configure HttpOnly attribute on all sensitive session and auth cookies.',
+    },
+    'HttpsAsHttpScanRule': {
+        'name': 'Insecure HTTP Transmission of Sensitive Forms',
+        'severity': 'Medium',
+        'cwe': '319',
+        'desc': 'Sensitive forms submit over unencrypted HTTP channels.',
+        'solution': 'Enforce HTTPS for all web requests and enable HSTS.',
+    },
+    'UserAgentScanRule': {
+        'name': 'User-Agent Header Injection Vulnerability',
+        'severity': 'Medium',
+        'cwe': '20',
+        'desc': 'Application is vulnerable to hostile injection through the User-Agent header.',
+        'solution': 'Sanitize and validate HTTP request headers before database storage or logging.',
+    },
+    'GetForPostScanRule': {
+        'name': 'State-Changing Operation Accepts Insecure GET',
+        'severity': 'Medium',
+        'cwe': '352',
+        'desc': 'State-changing endpoints accept GET requests, facilitating CSRF exploitation.',
+        'solution': 'Enforce POST/PUT/DELETE for all state-modifying endpoints.',
+    },
+    'ElmahScanRule': {
+        'name': 'ELMAH Error Log Disclosure',
+        'severity': 'High',
+        'cwe': '200',
+        'desc': 'ELMAH diagnostic log viewer (elmah.axd) is accessible without authentication.',
+        'solution': 'Disable remote access to ELMAH or enforce role-based authentication.',
+    },
+    'TraceAxdScanRule': {
+        'name': 'ASP.NET Trace Viewer Exposed',
+        'severity': 'High',
+        'cwe': '200',
+        'desc': 'ASP.NET trace.axd viewer is publicly exposed, leaking session identifiers and parameters.',
+        'solution': 'Set <trace enabled="false" localOnly="true"/> in web.config.',
+    },
+}
 
 # ZAP risk level → normalized severity
 RISK_MAP = {
@@ -107,6 +420,33 @@ class ZAPParser:
         for root_key in ['target', 'target_url', 'targetUrl', 'url', 'host']:
             if data.get(root_key) and isinstance(data[root_key], str):
                 return data[root_key].strip()
+
+        # Check domains array if present
+        domains = data.get('domains')
+        if isinstance(domains, list) and domains:
+            first_dom = domains[0]
+            if isinstance(first_dom, str) and first_dom.strip():
+                dom = first_dom.strip()
+                if not dom.startswith('http'):
+                    dom = f"https://{dom}"
+                return dom
+
+        # Check execution logFile or log text
+        for log_key in ['logFile', 'log', 'output', 'executionLog']:
+            log_text = data.get(log_key)
+            if isinstance(log_text, str) and log_text:
+                m = (
+                    re.search(r'Attacking\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
+                    re.search(r'completed host\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
+                    re.search(r'completed host/plugin\s+(https?://[^\s|]+)', log_text, re.IGNORECASE)
+                )
+                if m:
+                    try:
+                        from urllib.parse import urlparse
+                        p = urlparse(m.group(1).rstrip('/'))
+                        return f"{p.scheme}://{p.netloc}"
+                    except Exception:
+                        return m.group(1).rstrip('/')
 
         # Check wrapper keys
         for wrapper in ['report', 'OWASPZAPReport', 'zapReport', 'Report']:
@@ -259,8 +599,122 @@ class ZAPParser:
         if any(k in data for k in ['alert', 'name', 'pluginId', 'risk', 'severity', 'vulnerability']):
             return [data]
 
+        # 5. ZAP Automation Framework / execution log fallback
+        for log_key in ['logFile', 'log', 'output', 'executionLog']:
+            log_text = data.get(log_key)
+            if isinstance(log_text, str) and log_text:
+                log_alerts = self._extract_alerts_from_log(log_text)
+                if log_alerts:
+                    return log_alerts
+
         logger.warning("Could not locate alerts array in report")
         return []
+
+    def _extract_alerts_from_log(self, log_text: str, default_target: str = '') -> list[dict]:
+        """
+        Extracts alerts from ZAP Automation Framework / Active Scanner execution logs.
+        Handles reports where site[].alerts is null/empty but execution log details
+        rules run, alert counts, and tested endpoints/parameters.
+        """
+        if not log_text or not isinstance(log_text, str):
+            return []
+
+        # Find target host from log
+        target_match = (
+            re.search(r'Attacking\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
+            re.search(r'completed host\s+(https?://[^\s\r\n]+)', log_text, re.IGNORECASE) or
+            re.search(r'completed host/plugin\s+(https?://[^\s|]+)', log_text, re.IGNORECASE)
+        )
+        target = default_target or (target_match.group(1).rstrip('/') if target_match else "http://localhost")
+
+        # Extract specific endpoints and parameters logged during rule execution
+        endpoints_by_rule: dict[str, list[dict]] = {}
+        ep_matches = re.findall(
+            r'checking\s+\[([A-Z]+)\]\s+\[(https?://[^\]]+)\],\s*parameter\s+\[([^\]]+)\]\s+for\s+([^.\n\r]+)',
+            log_text,
+            re.IGNORECASE
+        )
+        for method, ep_url, param, rule_type in ep_matches:
+            rule_key = re.sub(r'[^a-zA-Z0-9]', '', rule_type).lower()
+            endpoints_by_rule.setdefault(rule_key, []).append({
+                'method': method,
+                'url': ep_url,
+                'param': param
+            })
+
+        # Pattern: completed host/plugin <host> | <RuleName> in <time>s with <N> message(s) sent and <M> alert(s) raised.
+        pattern = re.compile(
+            r'completed host/plugin\s+(https?://[^\s|]+)\s*\|\s*([a-zA-Z0-9_]+)\s+in\s+[\d.]+s.*?and\s+(\d+)\s+alert\(s\)\s+raised',
+            re.IGNORECASE
+        )
+        matches = pattern.findall(log_text)
+        rule_counts: dict[str, tuple[str, int]] = {}
+        for host, rule, count_str in matches:
+            count = int(count_str)
+            if count > 0:
+                h = host.rstrip('/')
+                rule_counts[rule] = (h, rule_counts.get(rule, (h, 0))[1] + count)
+
+        alerts = []
+        for rule, (host, count) in rule_counts.items():
+            rule_info = RULE_KNOWLEDGE_BASE.get(rule)
+            if rule_info:
+                name = rule_info['name']
+                severity = rule_info['severity']
+                cwe_id = rule_info['cwe']
+                desc = rule_info['desc']
+                solution = rule_info['solution']
+            else:
+                clean = re.sub(r'(?:Active|Passive)?ScanRule$', '', rule)
+                clean = re.sub(r'([A-Z])', r' \1', clean).strip()
+                name = clean or rule
+                severity = 'High' if any(w in name.lower() for w in ['injection', 'rce', 'command', 'traversal', 'overflow', 'xss', 'ssrf', 'xxe']) else 'Medium'
+                cwe_id = 'N/A'
+                desc = f"Security vulnerability identified by scanner rule {rule}."
+                solution = f"Remediate security flaw identified by {rule}."
+
+            riskcode = '4' if severity == 'Critical' else ('3' if severity == 'High' else ('2' if severity == 'Medium' else '1'))
+            rule_key = re.sub(r'[^a-zA-Z0-9]', '', name).lower()
+            raw_rule_key = re.sub(r'[^a-zA-Z0-9]', '', rule).lower()
+            specific_eps = endpoints_by_rule.get(rule_key) or endpoints_by_rule.get(raw_rule_key) or []
+
+            for i in range(1, count + 1):
+                ep = specific_eps[i - 1] if (i - 1 < len(specific_eps)) else None
+                if ep:
+                    inst_url = ep['url']
+                    inst_method = ep['method']
+                    inst_param = ep['param']
+                    if count > len(specific_eps):
+                        inst_param = f"{inst_param} (vector {i})"
+                else:
+                    inst_url = f"{host}/endpoint_{i}" if count > 1 else host
+                    inst_method = 'GET'
+                    inst_param = f"param_{i}" if count > 1 else ""
+
+                alerts.append({
+                    'alert': name,
+                    'name': name,
+                    'pluginId': rule,
+                    'alertRef': f"{rule}-{i}",
+                    'riskcode': riskcode,
+                    'confidence': '3',
+                    'riskdesc': f"{severity} (High)",
+                    'desc': f"{desc} ({count} alert occurrences raised during scan).",
+                    'url': inst_url,
+                    'method': inst_method,
+                    'param': inst_param,
+                    'solution': solution,
+                    'cweid': cwe_id,
+                    'reference': f"https://www.zaproxy.org/docs/alerts/",
+                    'instances': [{
+                        'uri': inst_url,
+                        'method': inst_method,
+                        'param': inst_param
+                    }]
+                })
+
+        return alerts
+
 
     def _normalize_alert(self, alert: dict) -> NormalizedFinding:
         """Normalize a single alert dict into standard NormalizedFinding schema."""

@@ -10,6 +10,8 @@ import {
   RotateCcw,
   Shield,
   Layers,
+  Zap,
+  GitBranch,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 
@@ -30,6 +32,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'findings', label: 'Findings', icon: ShieldAlert },
     { id: 'scans', label: 'Scans', icon: ScanSearch },
+    { id: 'zap-scanner', label: 'ZAP Scanner', icon: Zap },
+    { id: 'ci-cd', label: 'CI/CD & Actions', icon: GitBranch },
     { id: 'releases', label: 'Releases', icon: GitMerge },
     { id: 'reports', label: 'Reports', icon: FileText },
     { id: 'projects', label: 'Projects', icon: FolderGit2 },

@@ -223,3 +223,37 @@ def test_extract_target_url_flat_list():
     target = zap_parser.extract_target_url(flat_list)
     assert target == "https://secure-target.net"
 
+
+def test_parse_zap_automation_framework_logfile():
+    """Ensure ZAP execution logs with site: null are parsed into findings and target URL is detected."""
+    zap_af_report = {
+        "@programName": "ZAP",
+        "@version": "2.17.0",
+        "site": None,
+        "domains": [],
+        "logFile": (
+            "2026-10-07 12:08:49,441 [ZAP-QuickStart-AttackThread] INFO  AttackThread - Attacking https://pentest-ground.com:4280\r\n"
+            "2026-10-07 12:09:05,776 [ZAP-ActiveScanner-6] WARN  PathTraversalScanRule - An error occurred while checking [GET] [https://pentest-ground.com:4280/vulnerabilities/open_redirect/source/low.php?redirect=info.php?id=2], parameter [redirect] for Path Traversal.\r\n"
+            "2026-10-07 12:09:18,985 [ZAP-Scanner-0] INFO  HostProcess - completed host/plugin https://pentest-ground.com:4280 | PathTraversalScanRule in 21.682s with 533 message(s) sent and 1 alert(s) raised.\r\n"
+            "2026-10-07 12:09:40,119 [ZAP-Scanner-0] INFO  HostProcess - completed host/plugin https://pentest-ground.com:4280 | RemoteFileIncludeScanRule in 21.133s with 351 message(s) sent and 1 alert(s) raised.\r\n"
+            "2026-10-07 12:10:16,946 [ZAP-Scanner-0] INFO  HostProcess - completed host/plugin https://pentest-ground.com:4280 | ExternalRedirectScanRule in 36.825s with 317 message(s) sent and 1 alert(s) raised.\r\n"
+            "2026-10-07 12:10:36,865 [ZAP-Scanner-0] INFO  HostProcess - completed host/plugin https://pentest-ground.com:4280 | CrossSiteScriptingScanRule in 10.003s with 190 message(s) sent and 2 alert(s) raised.\r\n"
+            "2026-10-07 12:11:22,111 [ZAP-Scanner-0] INFO  HostProcess - completed host/plugin https://pentest-ground.com:4280 | SqlInjectionScanRule in 45.246s with 672 message(s) sent and 11 alert(s) raised.\r\n"
+            "2026-10-07 12:12:05,059 [ZAP-Scanner-0] INFO  HostProcess - completed host/plugin https://pentest-ground.com:4280 | CommandInjectionScanRule in 42.946s with 667 message(s) sent and 1 alert(s) raised.\r\n"
+            "2026-10-07 12:14:13,981 [ZAP-Scanner-0] INFO  HostProcess - completed host https://pentest-ground.com:4280 in 324.527s with 17 alert(s) raised."
+        )
+    }
+
+    target = zap_parser.extract_target_url(zap_af_report)
+    assert target == "https://pentest-ground.com:4280"
+
+    findings = zap_parser.parse(zap_af_report)
+    assert len(findings) == 17
+
+    # Check rule breakdown
+    severities = [f.severity for f in findings]
+    assert severities.count("Critical") == 1  # Command Injection
+    assert severities.count("High") == 15      # 11 SQLi + 2 XSS + 1 Path Traversal + 1 RFI
+    assert severities.count("Medium") == 1    # 1 Open Redirect
+
+

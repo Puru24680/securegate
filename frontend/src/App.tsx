@@ -7,6 +7,8 @@ import { ReleasesPage } from './pages/ReleasesPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProjectsPage } from './pages/ProjectsPage';
+import { CiCdPage } from './pages/CiCdPage';
+import { ZapScannerPage } from './pages/ZapScannerPage';
 import { Project, Scan, DashboardData } from './types';
 import { api } from './services/api';
 
@@ -212,6 +214,21 @@ export function App() {
             setCurrentTab('dashboard');
           }}
           onRefreshProjects={loadProjects}
+        />
+      )}
+
+      {currentTab === 'zap-scanner' && (
+        <ZapScannerPage
+          projects={projects}
+          activeProject={activeProject}
+          onScanCompleted={handleScanCompleted}
+        />
+      )}
+
+      {currentTab === 'ci-cd' && (
+        <CiCdPage
+          projects={projects}
+          activeProject={activeProject}
         />
       )}
 

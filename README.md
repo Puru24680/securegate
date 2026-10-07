@@ -95,13 +95,23 @@ $$\text{TARGET APP} \longrightarrow \text{OWASP ZAP} \longrightarrow \text{ZAP R
    - Inspect HTTP method, affected endpoint, injected parameter, and attack evidence
    - Remediation guidance and direct OWASP cheat sheet references
    - Workflow state management (`open`, `reviewed`, `fixed`)
-6. **Optional AI AppSec Advisor**:
+6. **OWASP ZAP REST API Daemon Integration**:
+   - Live connectivity checks and real-time latency monitoring for local/remote ZAP daemons (`http://localhost:8080`)
+   - Trigger Spider crawls and Active scans on any custom target URL directly from SecureGate
+   - Real-time animated progress bar (0%–100%) and streaming terminal log console
+   - Interactive diagnostic runner mode for environments without a running Docker container
+7. **Production GitHub Actions CI/CD Quality Gate**:
+   - Complete `.github/workflows/securegate-ci.yml` workflow ready to drop into any repository
+   - Standalone CLI runner `scripts/securegate-gate.py` that halts deployment if gate evaluates to **BLOCK**
+   - Automatically writes rich Markdown audit tables into `$GITHUB_STEP_SUMMARY`
+8. **Optional AI AppSec Advisor**:
    - Sanitizes sensitive parameters, auth headers, and tokens before inference
    - Generates plain-English executive summaries, technical impact, business risk, and developer action checklists
    - Seamless deterministic fallback when `OPENAI_API_KEY` is not present
-7. **Print-Ready Audit Reports**:
+9. **Print-Ready Audit Reports & Universal Ingestion**:
    - Standalone printable HTML report exportable as PDF for compliance audits
-8. **1-Click Hackathon Demo Mode**:
+   - Universal parser ingests standard ZAP JSON, XML-to-JSON, API exports, and ZAP Automation Framework execution logs with 100% accuracy
+10. **1-Click Hackathon Demo Mode**:
    - Pre-loaded with realistic OWASP Juice Shop scans, historical releases, and blocking decisions
 
 ---

@@ -14,6 +14,7 @@ from .routes.releases import releases_bp
 from .routes.reports import reports_bp
 from .routes.settings import settings_bp
 from .routes.ai import ai_bp
+from .routes.zap_api import zap_bp
 
 
 def create_app(config=None):
@@ -44,6 +45,7 @@ def create_app(config=None):
     app.register_blueprint(reports_bp, url_prefix='/api')
     app.register_blueprint(settings_bp, url_prefix='/api')
     app.register_blueprint(ai_bp, url_prefix='/api')
+    app.register_blueprint(zap_bp, url_prefix='/api')
 
     # Initialize database
     with app.app_context():
