@@ -257,3 +257,82 @@ def test_parse_zap_automation_framework_logfile():
     assert severities.count("Medium") == 1    # 1 Open Redirect
 
 
+def test_parse_sarif_format():
+    sarif_data = {
+        "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [
+            {
+                "tool": {
+                    "driver": {
+                        "name": "CodeQL",
+                        "rules": [
+                            {
+                                "id": "js/sql-injection",
+                                "name": "SQL Injection in JavaScript",
+                                "shortDescription": {"text": "Database query built from user-controlled sources"},
+                                "properties": {"tags": ["cwe-089"]}
+                            }
+                        ]
+                    }
+                },
+                "results": [
+                    {
+                        "ruleId": "js/sql-injection",
+                        "level": "error",
+                        "message": {"text": "Query built from untrusted input without parameterization."},
+                        "locations": [
+                            {
+                                "physicalLocation": {
+                                    "artifactLocation": {"uri": "https://api.example.com/users/search.js"}
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+    findings = zap_parser.parse(sarif_data)
+    assert len(findings) == 1
+    assert findings[0].name == "Database query built from user-controlled sources"
+    assert findings[0].severity in ("High", "Critical")
+    assert findings[0].cwe_id == "CWE-089"
+    assert findings[0].url == "https://api.example.com/users/search.js"
+
+
+def test_parse_generic_vulnerabilities_format():
+    generic_data = {
+        "target": "https://production-app.io",
+        "vulnerabilities": [
+            {
+                "title": "Cross-Site Scripting (Stored)",
+                "risk": "High",
+                "cwe": "79",
+                "url": "https://production-app.io/profile",
+                "param": "bio",
+                "remediation": "Encode all HTML output contextually."
+            },
+            {
+                "title": "Hardcoded Secret Key",
+                "severity": "Critical",
+                "cwe": "798",
+                "url": "https://production-app.io/config.js",
+                "solution": "Remove secret from source."
+            }
+        ]
+    }
+    target = zap_parser.extract_target_url(generic_data)
+    assert target == "https://production-app.io"
+
+    findings = zap_parser.parse(generic_data)
+    assert len(findings) == 2
+    assert findings[0].name == "Cross-Site Scripting (Stored)"
+    assert findings[0].severity == "High"
+    assert findings[0].cwe_id == "CWE-79"
+    assert findings[1].name == "Hardcoded Secret Key"
+    assert findings[1].severity == "Critical"
+    assert findings[1].cwe_id == "CWE-798"
+
+
+

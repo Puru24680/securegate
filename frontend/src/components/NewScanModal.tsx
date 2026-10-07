@@ -45,63 +45,84 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reportMeta, setReportMeta] = useState<{ target: string | null; count: number } | null>(null);
 
   if (!isOpen) return null;
 
-  const detectTargetUrl = (json: any): string | null => {
-    if (!json) return null;
+  const analyzeReportPreview = (json: any): { targetUrl: string | null; alertCount: number } => {
+    let alertCount = 0;
+    let targetUrl: string | null = null;
+    if (!json) return { targetUrl, alertCount };
+
     try {
-      if (Array.isArray(json) && json.length > 0) {
+      // 1. Direct array of findings
+      if (Array.isArray(json)) {
+        alertCount = json.length;
         const first = json[0];
-        const url = first?.url || first?.uri || first?.target || first?.host || first?.['matched-at'];
-        if (url && typeof url === 'string' && url.trim().startsWith('http')) {
-          return new URL(url.trim()).origin;
+        const u = first?.url || first?.uri || first?.target || first?.host || first?.['matched-at'];
+        if (u && typeof u === 'string' && u.trim().startsWith('http')) {
+          targetUrl = new URL(u.trim()).origin;
         }
-      } else if (typeof json === 'object') {
-        const sites = json.site || json.sites || json.report?.site;
-        if (Array.isArray(sites) && sites.length > 0) {
-          const t = sites[0]?.['@name'] || sites[0]?.name || sites[0]?.host;
-          if (t && typeof t === 'string' && t.trim()) return t.trim();
-        } else if (sites && typeof sites === 'object') {
-          const t = sites['@name'] || sites.name || sites.host;
-          if (t && typeof t === 'string' && t.trim()) return t.trim();
-        }
-        for (const k of ['target_url', 'targetUrl', 'target', 'url', 'host']) {
-          if (json[k] && typeof json[k] === 'string' && json[k].trim()) {
-            const u = json[k].trim();
-            return u.startsWith('http') ? new URL(u).origin : u;
+        return { targetUrl, alertCount };
+      }
+
+      // 2. Check alerts or findings in arrays
+      const alertKeys = ['alerts', 'findings', 'vulnerabilities', 'issues', 'results', 'items', 'rules', 'flaws', 'defects'];
+      for (const k of alertKeys) {
+        if (Array.isArray(json[k]) && json[k].length > 0) {
+          alertCount = json[k].length;
+          const first = json[k][0];
+          const u = first?.url || first?.uri || first?.instances?.[0]?.uri || first?.instances?.[0]?.url || first?.target || first?.host;
+          if (u && typeof u === 'string' && u.trim().startsWith('http')) {
+            targetUrl = new URL(u.trim()).origin;
           }
+          break;
         }
-        // Check domains array if present
-        if (Array.isArray(json.domains) && json.domains.length > 0 && typeof json.domains[0] === 'string') {
-          const d = json.domains[0].trim();
-          if (d) return d.startsWith('http') ? d : `https://${d}`;
-        }
-        // Check logFile or log text
-        const log = json.logFile || json.log || json.output;
-        if (typeof log === 'string' && log) {
-          const match = log.match(/Attacking\s+(https?:\/\/[^\s\r\n]+)/i) ||
-                        log.match(/completed host\s+(https?:\/\/[^\s\r\n]+)/i) ||
-                        log.match(/completed host\/plugin\s+(https?:\/\/[^\s|]+)/i);
-          if (match && match[1]) {
-            try {
-              return new URL(match[1].trim()).origin;
-            } catch {
-              return match[1].trim();
+      }
+
+      // 3. Check ZAP site[].alerts[]
+      if (!alertCount) {
+        const sites = json.site || json.sites;
+        const siteList = Array.isArray(sites) ? sites : (sites ? [sites] : []);
+        for (const s of siteList) {
+          if (s && typeof s === 'object') {
+            const host = s['@name'] || s.name || s.host;
+            if (host && typeof host === 'string' && host.startsWith('http') && !targetUrl) {
+              try { targetUrl = new URL(host).origin; } catch { targetUrl = host; }
             }
+            const sAlerts = s.alerts || s.alert;
+            if (Array.isArray(sAlerts)) alertCount += sAlerts.length;
           }
         }
-        const alerts = json.alerts || json.findings || json.vulnerabilities || json.issues || [];
-        if (Array.isArray(alerts) && alerts.length > 0) {
-          const first = alerts[0];
-          const u = first?.url || first?.uri || first?.instances?.[0]?.uri || first?.['matched-at'];
-          if (u && typeof u === 'string' && u.startsWith('http')) {
-            return new URL(u.trim()).origin;
+      }
+
+      // 4. Check logFile for alerts raised
+      if (json.logFile && typeof json.logFile === 'string') {
+        const log = json.logFile;
+        const alertMatches = log.match(/and\s+([1-9]\d*)\s+alert\(s\)\s+raised/gi) || [];
+        for (const m of alertMatches) {
+          const num = parseInt(m.match(/\d+/)?.[0] || '0', 10);
+          alertCount += num;
+        }
+        const hostWithAlerts = log.match(/completed host\s+(https?:\/\/[^\s\r\n\\|"]+)\s+in\s+[\d.]+s.*?and\s+([1-9]\d*)\s+alert\(s\)\s+raised/i) ||
+                               log.match(/completed host\/plugin\s+(https?:\/\/[^\s\r\n\\|"]+)\s*\|\s*[a-zA-Z0-9_]+\s+in\s+[\d.]+s.*?and\s+([1-9]\d*)\s+alert\(s\)\s+raised/i);
+        if (hostWithAlerts && hostWithAlerts[1]) {
+          try { targetUrl = new URL(hostWithAlerts[1].trim()).origin; } catch { targetUrl = hostWithAlerts[1].trim(); }
+        }
+      }
+
+      // 5. Fallback target from root keys
+      if (!targetUrl) {
+        for (const k of ['target_url', 'targetUrl', 'target', 'url', 'host']) {
+          if (json[k] && typeof json[k] === 'string' && json[k].trim().startsWith('http')) {
+            try { targetUrl = new URL(json[k].trim()).origin; } catch { targetUrl = json[k].trim(); }
+            break;
           }
         }
       }
     } catch {}
-    return null;
+
+    return { targetUrl, alertCount };
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -110,15 +131,18 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
       setFile(selectedFile);
       setError(null);
 
-      // Auto-detect target URL from file content
+      // Auto-detect target URL and findings count from file content
       try {
         const text = await selectedFile.text();
         const json = JSON.parse(text);
-        const autoTarget = detectTargetUrl(json);
+        const { targetUrl: autoTarget, alertCount } = analyzeReportPreview(json);
         if (autoTarget) {
           setTargetUrl(autoTarget);
         }
-      } catch {}
+        setReportMeta({ target: autoTarget, count: alertCount });
+      } catch {
+        setReportMeta(null);
+      }
     }
   };
 
@@ -145,7 +169,7 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
       }
 
       // Detect target URL directly from report if available
-      const autoTarget = detectTargetUrl(parsedReport);
+      const { targetUrl: autoTarget } = analyzeReportPreview(parsedReport);
       const effectiveTarget = autoTarget || targetUrl;
 
       const effectiveProjectId = selectedProjectId || (projects[0]?.id ?? 1);
@@ -340,9 +364,25 @@ export const NewScanModal: React.FC<NewScanModalProps> = ({
                 {file ? file.name : 'Select or drop ZAP report JSON here'}
               </p>
               <p className="text-[11px] text-slate-400 mt-0.5">
-                Supports OWASP ZAP 2.14 baseline & active scan reports
+                Supports OWASP ZAP 2.14+ JSON, Automation Framework, and standard DAST exports
               </p>
             </div>
+
+            {reportMeta && (
+              <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-center justify-between animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <span>
+                    <strong>{reportMeta.count} vulnerabilities</strong> detected in file
+                  </span>
+                </div>
+                {reportMeta.target && (
+                  <span className="font-mono text-[11px] bg-emerald-100 text-emerald-900 px-2 py-0.5 rounded font-medium">
+                    {reportMeta.target}
+                  </span>
+                )}
+              </div>
+            )}
 
             <div className="flex justify-end gap-2.5 pt-2">
               <button

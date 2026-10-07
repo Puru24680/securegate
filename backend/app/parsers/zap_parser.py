@@ -381,109 +381,118 @@ class ZAPParser:
         else:
             return None
 
-        # Check list of items (e.g. list of alerts, sites, or finding objects)
-        if isinstance(data, list):
-            if not data:
-                return None
-            first_item = data[0]
-            if isinstance(first_item, dict):
-                if 'site' in first_item or 'sites' in first_item or 'alerts' in first_item:
-                    return self.extract_target_url(first_item)
-                first_url = (
-                    first_item.get('url') or
-                    first_item.get('uri') or
-                    first_item.get('target') or
-                    first_item.get('host') or
-                    first_item.get('matched-at')
-                )
-                if first_url and str(first_url).startswith('http'):
-                    try:
-                        from urllib.parse import urlparse
-                        p = urlparse(first_url)
-                        return f"{p.scheme}://{p.netloc}"
-                    except Exception:
-                        return str(first_url).strip()
-            return None
-
-        # Check standard site array or dict
-        sites = data.get('site') or data.get('sites')
-        if isinstance(sites, list) and sites and isinstance(sites[0], dict):
-            target = sites[0].get('@name') or sites[0].get('name') or sites[0].get('host')
-            if target and str(target).strip():
-                return str(target).strip()
-        elif isinstance(sites, dict):
-            target = sites.get('@name') or sites.get('name') or sites.get('host')
-            if target and str(target).strip():
-                return str(target).strip()
-
-        # Check target or url at root
-        for root_key in ['target', 'target_url', 'targetUrl', 'url', 'host']:
-            if data.get(root_key) and isinstance(data[root_key], str):
-                return data[root_key].strip()
-
-        # Check domains array if present
-        domains = data.get('domains')
-        if isinstance(domains, list) and domains:
-            first_dom = domains[0]
-            if isinstance(first_dom, str) and first_dom.strip():
-                dom = first_dom.strip()
-                if not dom.startswith('http'):
-                    dom = f"https://{dom}"
-                return dom
-
-        # Check execution logFile or log text
-        for log_key in ['logFile', 'log', 'output', 'executionLog']:
-            log_text = data.get(log_key)
-            if isinstance(log_text, str) and log_text:
-                m = (
-                    re.search(r'Attacking\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
-                    re.search(r'completed host\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
-                    re.search(r'completed host/plugin\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE)
-                )
-                if m:
-                    cand = m.group(1).split('\\')[0].rstrip('/')
-                    try:
-                        from urllib.parse import urlparse
-                        p = urlparse(cand)
-                        if p.scheme and p.netloc:
-                            return f"{p.scheme}://{p.netloc}"
-                        return cand
-                    except Exception:
-                        return cand
-
-        # Check wrapper keys
-        for wrapper in ['report', 'OWASPZAPReport', 'zapReport', 'Report']:
-            if wrapper in data and isinstance(data[wrapper], (dict, list)):
-                res = self.extract_target_url(data[wrapper])
-                if res:
-                    return res
-
-        # Fallback: extract from first alert's URL if available
+        # 1. First, check if any alerts/findings already have explicit target URLs
         alerts = self._extract_alerts(data)
         if alerts and isinstance(alerts, list):
+            target_counts: dict[str, int] = {}
             for alert_item in alerts:
                 if not isinstance(alert_item, dict):
                     continue
+                cand = None
                 instances = alert_item.get('instances', alert_item.get('occurrences', []))
                 if isinstance(instances, dict):
                     instances = instances.get('instance') or [instances]
                 if isinstance(instances, list) and instances and isinstance(instances[0], dict):
                     cand = instances[0].get('uri') or instances[0].get('url')
-                    if cand and str(cand).startswith('http'):
+                if not cand:
+                    cand = (
+                        alert_item.get('url') or
+                        alert_item.get('uri') or
+                        alert_item.get('target') or
+                        alert_item.get('matched-at') or
+                        alert_item.get('host')
+                    )
+                if cand and str(cand).strip().startswith('http'):
+                    try:
+                        from urllib.parse import urlparse
+                        p = urlparse(str(cand).strip())
+                        if p.scheme and p.netloc:
+                            origin = f"{p.scheme}://{p.netloc}"
+                            target_counts[origin] = target_counts.get(origin, 0) + 1
+                    except Exception:
+                        pass
+            if target_counts:
+                # Return the target URL with the most findings
+                best_target = max(target_counts.items(), key=lambda x: x[1])[0]
+                return best_target
+
+        # 2. Check standard site array or dict
+        if isinstance(data, dict):
+            sites = data.get('site') or data.get('sites')
+            if isinstance(sites, list) and sites and isinstance(sites[0], dict):
+                target = sites[0].get('@name') or sites[0].get('name') or sites[0].get('host')
+                if target and str(target).strip():
+                    return str(target).strip()
+            elif isinstance(sites, dict):
+                target = sites.get('@name') or sites.get('name') or sites.get('host')
+                if target and str(target).strip():
+                    return str(target).strip()
+
+            # 3. Check target or url at root
+            for root_key in ['target', 'target_url', 'targetUrl', 'url', 'host']:
+                if data.get(root_key) and isinstance(data[root_key], str):
+                    val = data[root_key].strip()
+                    if val.startswith('http'):
+                        try:
+                            from urllib.parse import urlparse
+                            p = urlparse(val)
+                            return f"{p.scheme}://{p.netloc}" if (p.scheme and p.netloc) else val
+                        except Exception:
+                            return val
+                    return val
+
+            # 4. Check domains array if present
+            domains = data.get('domains')
+            if isinstance(domains, list) and domains:
+                first_dom = domains[0]
+                if isinstance(first_dom, str) and first_dom.strip():
+                    dom = first_dom.strip()
+                    if not dom.startswith('http'):
+                        dom = f"https://{dom}"
+                    return dom
+
+            # 5. Check execution logFile or log text with prioritization
+            for log_key in ['logFile', 'log', 'output', 'executionLog']:
+                log_text = data.get(log_key)
+                if isinstance(log_text, str) and log_text:
+                    # Priority 5a: Host with positive alert count
+                    m_alert = (
+                        re.search(r'completed host\s+(https?://[^\s\r\n\\|"]+)\s+in\s+[\d.]+s.*?and\s+([1-9]\d*)\s+alert\(s\)\s+raised', log_text, re.IGNORECASE) or
+                        re.search(r'completed host/plugin\s+(https?://[^\s\r\n\\|"]+)\s*\|\s*[a-zA-Z0-9_]+\s+in\s+[\d.]+s.*?and\s+([1-9]\d*)\s+alert\(s\)\s+raised', log_text, re.IGNORECASE)
+                    )
+                    if m_alert:
+                        cand = m_alert.group(1).split('\\')[0].rstrip('/')
                         try:
                             from urllib.parse import urlparse
                             p = urlparse(cand)
-                            return f"{p.scheme}://{p.netloc}"
+                            if p.scheme and p.netloc:
+                                return f"{p.scheme}://{p.netloc}"
                         except Exception:
-                            pass
-                cand_url = alert_item.get('url') or alert_item.get('uri') or alert_item.get('matched-at')
-                if cand_url and str(cand_url).startswith('http'):
-                    try:
-                        from urllib.parse import urlparse
-                        p = urlparse(cand_url)
-                        return f"{p.scheme}://{p.netloc}"
-                    except Exception:
-                        pass
+                            return cand
+
+                    # Priority 5b: General attack / host lines
+                    m = (
+                        re.search(r'Attacking\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
+                        re.search(r'completed host\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE) or
+                        re.search(r'completed host/plugin\s+(https?://[^\s\r\n\\|"]+)', log_text, re.IGNORECASE)
+                    )
+                    if m:
+                        cand = m.group(1).split('\\')[0].rstrip('/')
+                        try:
+                            from urllib.parse import urlparse
+                            p = urlparse(cand)
+                            if p.scheme and p.netloc:
+                                return f"{p.scheme}://{p.netloc}"
+                            return cand
+                        except Exception:
+                            return cand
+
+            # 6. Check wrapper keys
+            for wrapper in ['report', 'OWASPZAPReport', 'zapReport', 'Report']:
+                if wrapper in data and isinstance(data[wrapper], (dict, list)):
+                    res = self.extract_target_url(data[wrapper])
+                    if res:
+                        return res
 
         return None
 
@@ -578,8 +587,53 @@ class ZAPParser:
             if alerts:
                 return alerts
 
+        # Check SARIF format (runs[].results[])
+        runs = data.get('runs')
+        if isinstance(runs, list) and runs:
+            sarif_alerts = []
+            for run in runs:
+                if not isinstance(run, dict):
+                    continue
+                rules_map = {}
+                driver = run.get('tool', {}).get('driver', {})
+                for r in driver.get('rules', []):
+                    if isinstance(r, dict) and 'id' in r:
+                        rules_map[r['id']] = r
+
+                for res in run.get('results', []):
+                    if not isinstance(res, dict):
+                        continue
+                    rule_id = res.get('ruleId', 'SARIF-Rule')
+                    rule_def = rules_map.get(rule_id, {})
+                    msg = res.get('message', {}).get('text', '') if isinstance(res.get('message'), dict) else str(res.get('message', ''))
+                    level = str(res.get('level', 'warning')).lower()
+
+                    loc_uri = ''
+                    locations = res.get('locations', [])
+                    if locations and isinstance(locations[0], dict):
+                        phys = locations[0].get('physicalLocation', {})
+                        loc_uri = phys.get('artifactLocation', {}).get('uri', '')
+
+                    cwe_val = ''
+                    for tag in rule_def.get('properties', {}).get('tags', []):
+                        if 'cwe' in str(tag).lower():
+                            cwe_val = str(tag)
+                            break
+
+                    sarif_alerts.append({
+                        'name': rule_def.get('shortDescription', {}).get('text') or rule_def.get('name') or rule_id,
+                        'desc': rule_def.get('fullDescription', {}).get('text') or msg,
+                        'severity': 'Critical' if level == 'error' and any(k in rule_id.lower() for k in ['rce', 'inject', 'exec', 'command']) else ('High' if level == 'error' else ('Medium' if level == 'warning' else 'Low')),
+                        'url': loc_uri,
+                        'pluginId': rule_id,
+                        'solution': rule_def.get('help', {}).get('text', ''),
+                        'cwe': cwe_val,
+                    })
+            if sarif_alerts:
+                return sarif_alerts
+
         # 2. Check top-level lists
-        for key in ['alerts', 'findings', 'vulnerabilities', 'issues', 'results', 'items', 'rules']:
+        for key in ['alerts', 'findings', 'vulnerabilities', 'issues', 'results', 'items', 'rules', 'flaws', 'defects', 'scans', 'records', 'audit', 'weaknesses']:
             if key in data:
                 val = data[key]
                 if isinstance(val, list):
@@ -595,7 +649,7 @@ class ZAPParser:
         for key, val in data.items():
             if isinstance(val, list) and val and isinstance(val[0], dict):
                 first = val[0]
-                if any(k in first for k in ['alert', 'name', 'title', 'pluginId', 'risk', 'severity', 'cweid', 'url', 'uri', 'vulnerability']):
+                if any(k in first for k in ['alert', 'name', 'title', 'pluginId', 'ruleId', 'risk', 'severity', 'cweid', 'url', 'uri', 'vulnerability', 'issue']):
                     return val
 
         # 4. Single root alert dictionary
@@ -740,8 +794,18 @@ class ZAPParser:
             info.get('name') or
             info.get('title') or
             alert.get('vulnerability') or
+            alert.get('vulnerability_name') or
+            alert.get('vuln_name') or
+            alert.get('issue') or
+            alert.get('issueName') or
+            alert.get('rule') or
             alert.get('rule_name') or
+            alert.get('ruleName') or
+            alert.get('ruleId') or
+            alert.get('check_name') or
             alert.get('pluginId') or
+            alert.get('id') or
+            alert.get('type') or
             'Unknown Vulnerability'
         )
         if isinstance(name, (list, dict)):
@@ -816,24 +880,45 @@ class ZAPParser:
             evidence = first.get('evidence') or first.get('attack') or first.get('payload') or ''
 
         if not url:
-            url = alert.get('url') or alert.get('uri') or alert.get('matched-at') or alert.get('host') or alert.get('endpoint') or ''
+            h = str(alert.get('host') or alert.get('target') or '').strip()
+            p = str(alert.get('path') or alert.get('endpoint') or alert.get('location') or '').strip()
+            if h and p:
+                if h.startswith('http'):
+                    url = f"{h.rstrip('/')}/{p.lstrip('/')}"
+                else:
+                    url = f"https://{h.rstrip('/')}/{p.lstrip('/')}"
+            elif h:
+                url = h if h.startswith('http') else f"https://{h}"
+            elif p and p.startswith('http'):
+                url = p
+            else:
+                url = alert.get('url') or alert.get('uri') or alert.get('matched-at') or alert.get('endpoint') or alert.get('link') or alert.get('href') or ''
+
         if not parameter:
-            parameter = alert.get('param') or alert.get('parameter') or alert.get('input') or ''
+            parameter = alert.get('param') or alert.get('parameter') or alert.get('input') or alert.get('field') or alert.get('variable') or ''
         if not evidence:
-            evidence = alert.get('evidence') or alert.get('attack') or alert.get('payload') or str(alert.get('extracted-results', ''))
+            evidence = alert.get('evidence') or alert.get('attack') or alert.get('payload') or str(alert.get('extracted-results', '')) or alert.get('proof') or ''
         if not method or method == 'GET':
-            method = alert.get('method') or 'GET'
+            method = alert.get('method') or alert.get('http_method') or 'GET'
 
         # 5. CWE Classification
-        cwe_raw = alert.get('cweid') or alert.get('cweId') or alert.get('cwe') or alert.get('cwe_id') or ''
+        cwe_raw = alert.get('cweid') or alert.get('cweId') or alert.get('cwe') or alert.get('cwe_id') or alert.get('cwe-id') or ''
+        if not cwe_raw and isinstance(alert.get('identifiers'), dict):
+            cwe_raw = alert['identifiers'].get('CWE') or alert['identifiers'].get('cwe') or ''
+        if isinstance(cwe_raw, list) and cwe_raw:
+            cwe_raw = cwe_raw[0]
         if not cwe_raw and isinstance(alert.get('classification'), dict):
             cwe_raw = alert['classification'].get('cwe-id', '')
         if not cwe_raw and isinstance(info.get('classification'), dict):
             cwe_raw = info['classification'].get('cwe-id', '')
 
         if cwe_raw and str(cwe_raw).strip() not in ('', '-1', '0', 'None', 'null'):
-            cwe_clean = str(cwe_raw).replace('CWE-', '').strip()
-            cwe_id = f"CWE-{cwe_clean}"
+            digits = re.findall(r'\d+', str(cwe_raw))
+            if digits:
+                cwe_id = f"CWE-{digits[0]}"
+            else:
+                cwe_clean = str(cwe_raw).replace('CWE-', '').strip()
+                cwe_id = f"CWE-{cwe_clean}"
         else:
             cwe_id = 'N/A'
 
@@ -843,8 +928,10 @@ class ZAPParser:
             alert.get('description') or
             info.get('description') or
             alert.get('detail') or
+            alert.get('details') or
             alert.get('summary') or
             alert.get('issueBackground') or
+            alert.get('message') or
             ''
         )
         sol = (
@@ -853,6 +940,9 @@ class ZAPParser:
             alert.get('recommendation') or
             info.get('remediation') or
             alert.get('remediationBackground') or
+            alert.get('fix') or
+            alert.get('mitigation') or
+            alert.get('how_to_fix') or
             ''
         )
 

@@ -54,29 +54,44 @@ class ScanService:
         else:
             resolved_url = target_url or "http://localhost:3000"
 
-        # Resolve or auto-register project based on detected target
-        project = db.session.get(Project, project_id) if project_id else None
+        # Parse target details
+        parsed_target = urlparse(resolved_url)
+        target_hostname = parsed_target.netloc or parsed_target.path or resolved_url
 
-        # If detected target is an external/custom website and differs from selected project's target
-        if detected_target and ("localhost" not in detected_target and "127.0.0.1" not in detected_target):
-            matching = Project.query.filter(Project.target_url == detected_target).first()
-            if matching:
-                project = matching
-            elif not project or project.target_url != detected_target:
-                parsed = urlparse(detected_target)
-                hostname = parsed.netloc or parsed.path or "Custom Web Application"
-                org_id = project.organization_id if project else 1
-                new_proj = Project(
-                    organization_id=org_id,
-                    name=hostname,
-                    target_url=detected_target,
-                    description=f"Auto-registered target project from scan of {detected_target}.",
-                    environment="Development",
-                    is_demo=False
-                )
-                db.session.add(new_proj)
-                db.session.commit()
-                project = new_proj
+        # Resolve or auto-register project based on detected target
+        selected_project = db.session.get(Project, project_id) if project_id else None
+        project = None
+
+        if selected_project and selected_project.target_url == resolved_url:
+            project = selected_project
+        else:
+            # Look for existing project matching this target URL
+            project = Project.query.filter(Project.target_url == resolved_url).first()
+
+            # If not found, look for existing project matching hostname
+            if not project and parsed_target.netloc:
+                for p in Project.query.all():
+                    if p.target_url and urlparse(p.target_url).netloc == parsed_target.netloc:
+                        project = p
+                        break
+
+            # If still not found and target differs from default Juice Shop demo URL, create new target project
+            if not project:
+                if resolved_url not in ("http://localhost:3000", "http://localhost:3000/"):
+                    org_id = selected_project.organization_id if selected_project else 1
+                    new_proj = Project(
+                        organization_id=org_id,
+                        name=target_hostname,
+                        target_url=resolved_url,
+                        description=f"Auto-registered target project from scan of {resolved_url}.",
+                        environment="Development",
+                        is_demo=False
+                    )
+                    db.session.add(new_proj)
+                    db.session.commit()
+                    project = new_proj
+                else:
+                    project = selected_project or Project.query.first()
 
         if not project:
             project = Project.query.first()
@@ -313,7 +328,7 @@ class ScanService:
                     'risk_score': finding_record.risk_score
                 })
 
-        # 3. Mark previous findings that were NOT seen in this scan as resolved
+        # 3. Mark previous findings for this target that were NOT seen in this scan as resolved
         earlier_active = Finding.query.filter(
             Finding.project_id == project.id,
             Finding.status.in_(['open', 'confirmed', 'in_progress', 'reopened'])
@@ -321,8 +336,10 @@ class ScanService:
 
         for prev_f in earlier_active:
             if prev_f.fingerprint and prev_f.fingerprint not in current_scan_fingerprints:
-                prev_f.status = 'resolved'
-                prev_f.resolved_at = now
+                prev_host = urlparse(prev_f.url).netloc if prev_f.url else ''
+                if not prev_host or not parsed_target.netloc or prev_host == parsed_target.netloc:
+                    prev_f.status = 'resolved'
+                    prev_f.resolved_at = now
 
         # 4. Calculate Scores and Evaluate Gate Decisions
         sec_score = calculate_security_score(active_findings_for_gate)

@@ -35,7 +35,9 @@ def _auto_migrate():
         ("findings", "organization_id", "INTEGER DEFAULT 1"),
         ("findings", "project_id", "INTEGER DEFAULT 1"),
         ("findings", "asset_id", "INTEGER"),
+        ("findings", "cvss_score", "FLOAT DEFAULT 0.0"),
         ("findings", "risk_score", "FLOAT DEFAULT 0.0"),
+        ("findings", "endpoint", "VARCHAR(500) DEFAULT ''"),
         ("findings", "owner_id", "INTEGER"),
         ("findings", "due_date", "DATETIME"),
         ("findings", "first_seen", "DATETIME"),
@@ -54,6 +56,18 @@ def _auto_migrate():
                         conn.commit()
                 except Exception:
                     pass
+
+    # Migrate or recreate audit_logs if schema has changed
+    if "audit_logs" in existing_tables:
+        existing_cols = {c["name"] for c in inspector.get_columns("audit_logs")}
+        if "action" not in existing_cols or "organization_id" not in existing_cols:
+            try:
+                with db.engine.connect() as conn:
+                    conn.execute(text("DROP TABLE audit_logs"))
+                    conn.commit()
+                AuditLog.__table__.create(db.engine, checkfirst=True)
+            except Exception:
+                pass
 
     if "findings" in existing_tables:
         try:
