@@ -1,0 +1,185 @@
+{
+  "@programName": "OWASP ZAP",
+  "@version": "2.14.0",
+  "@generated": "Wed, 7 Oct 2026 13:15:00",
+  "site": [
+    {
+      "@name": "http://testphp.vulnweb.com",
+      "@host": "testphp.vulnweb.com",
+      "@port": "80",
+      "@ssl": "false",
+      "alerts": [
+        {
+          "pluginId": "90020",
+          "alertRef": "90020-1",
+          "alert": "Remote OS Command Injection",
+          "name": "Remote OS Command Injection",
+          "riskcode": "4",
+          "confidence": "3",
+          "riskdesc": "Critical (High)",
+          "desc": "Arbitrary operating system commands can be executed on the server by supplying shell metacharacters in parameter input.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/tools/ping.php",
+              "method": "POST",
+              "param": "ip",
+              "attack": "127.0.0.1; whoami",
+              "evidence": "root\nuid=0(root)"
+            }
+          ],
+          "solution": "Avoid passing user input to system shell execution functions. Use native programming language APIs with strict parameter lists instead of shell command strings.",
+          "reference": "https://cwe.mitre.org/data/definitions/78.html",
+          "cweid": "78"
+        },
+        {
+          "pluginId": "40018",
+          "alertRef": "40018-1",
+          "alert": "SQL Injection",
+          "name": "SQL Injection",
+          "riskcode": "3",
+          "confidence": "3",
+          "riskdesc": "High (High)",
+          "desc": "SQL injection may be possible. The user-supplied input in the search query parameter is directly concatenated into a dynamic SQL command without parameterized sanitization.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/listproducts.php?cat=1",
+              "method": "GET",
+              "param": "cat",
+              "attack": "1' OR '1'='1",
+              "evidence": "Error: You have an error in your SQL syntax"
+            }
+          ],
+          "solution": "Refactor database access to use parameterized prepared statements or an Object-Relational Mapper (ORM) with strict query binding.",
+          "reference": "https://owasp.org/www-community/attacks/SQL_Injection",
+          "cweid": "89"
+        },
+        {
+          "pluginId": "40012",
+          "alertRef": "40012-1",
+          "alert": "Cross Site Scripting (Reflected)",
+          "name": "Cross Site Scripting (Reflected)",
+          "riskcode": "3",
+          "confidence": "3",
+          "riskdesc": "High (High)",
+          "desc": "A reflected cross-site scripting (XSS) vulnerability was identified in the artists parameter. Malicious JavaScript injected via parameter is echoed verbatim into the client DOM without HTML entity encoding.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/artists.php?artist=1",
+              "method": "GET",
+              "param": "artist",
+              "attack": "<script>alert('XSS')</script>",
+              "evidence": "<script>alert('XSS')</script>"
+            }
+          ],
+          "solution": "Contextually encode all user-controlled data before rendering into HTML. Implement a strict Content-Security-Policy (CSP).",
+          "reference": "https://owasp.org/www-community/attacks/xss/",
+          "cweid": "79"
+        },
+        {
+          "pluginId": "40028",
+          "alertRef": "40028-1",
+          "alert": "Directory Listing and Path Traversal",
+          "name": "Directory Listing and Path Traversal",
+          "riskcode": "3",
+          "confidence": "3",
+          "riskdesc": "High (High)",
+          "desc": "Unrestricted access to file system directories permits unauthenticated attackers to read sensitive configuration and system files.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/download.php?file=../../../../etc/passwd",
+              "method": "GET",
+              "param": "file",
+              "attack": "../../../../etc/passwd",
+              "evidence": "root:x:0:0:root:/root:/bin/bash"
+            }
+          ],
+          "solution": "Enforce canonical file path resolution, validate against a strict whitelist of permitted files, and disable web server directory listing.",
+          "reference": "https://owasp.org/www-project-top-ten/2021/A01_2021-Broken_Access_Control/",
+          "cweid": "22"
+        },
+        {
+          "pluginId": "10202",
+          "alertRef": "10202-1",
+          "alert": "Absence of Anti-CSRF Tokens",
+          "name": "Absence of Anti-CSRF Tokens",
+          "riskcode": "2",
+          "confidence": "2",
+          "riskdesc": "Medium (Medium)",
+          "desc": "No Anti-CSRF tokens were found in HTML state-changing forms. Attackers can forge cross-origin POST requests on behalf of authenticated users.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/userinfo.php",
+              "method": "POST",
+              "param": "uname",
+              "evidence": "<form action=\"/userinfo.php\" method=\"POST\">"
+            }
+          ],
+          "solution": "Implement cryptographically strong Synchronizer CSRF tokens or configure SameSite=Lax/Strict cookie attributes.",
+          "reference": "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html",
+          "cweid": "352"
+        },
+        {
+          "pluginId": "10020",
+          "alertRef": "10020-1",
+          "alert": "Missing Anti-clickjacking Header",
+          "name": "Missing Anti-clickjacking Header",
+          "riskcode": "2",
+          "confidence": "3",
+          "riskdesc": "Medium (High)",
+          "desc": "The HTTP response does not include the X-Frame-Options or Content-Security-Policy frame-ancestors header. The site can be framed by third parties to hijack clicks.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/login.php",
+              "method": "GET",
+              "evidence": "X-Frame-Options header missing"
+            }
+          ],
+          "solution": "Configure the web server to emit 'X-Frame-Options: DENY' or 'Content-Security-Policy: frame-ancestors none;'.",
+          "reference": "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options",
+          "cweid": "1021"
+        },
+        {
+          "pluginId": "10010",
+          "alertRef": "10010-1",
+          "alert": "Cookie No HttpOnly Flag",
+          "name": "Cookie No HttpOnly Flag",
+          "riskcode": "1",
+          "confidence": "3",
+          "riskdesc": "Low (High)",
+          "desc": "A cookie has been set without the HttpOnly attribute. This permits client-side JavaScript scripts to access the cookie value, increasing risk of credential exfiltration via XSS.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/login.php",
+              "method": "GET",
+              "param": "session_id",
+              "evidence": "Set-Cookie: session_id=abc123xyz; Path=/"
+            }
+          ],
+          "solution": "Ensure that the HttpOnly flag is set on sensitive session and token cookies.",
+          "reference": "https://owasp.org/www-community/HttpOnly",
+          "cweid": "1004"
+        },
+        {
+          "pluginId": "10036",
+          "alertRef": "10036-1",
+          "alert": "Server Banner and Version Disclosure",
+          "name": "Server Banner and Version Disclosure",
+          "riskcode": "1",
+          "confidence": "3",
+          "riskdesc": "Low (High)",
+          "desc": "The server response leaks detailed server banners and PHP runtime version numbers in HTTP response headers.",
+          "instances": [
+            {
+              "uri": "http://testphp.vulnweb.com/index.php",
+              "method": "GET",
+              "evidence": "Server: Apache/2.4.41 (Ubuntu) PHP/7.4.3"
+            }
+          ],
+          "solution": "Configure ServerTokens Prod and expose_php = Off in server configurations.",
+          "reference": "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/01-Information_Gathering/02-Fingerprint_Web_Server",
+          "cweid": "200"
+        }
+      ]
+    }
+  ]
+}
